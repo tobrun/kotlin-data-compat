@@ -1,13 +1,12 @@
 ## Data-compat
 
 ### Context
-The Data-compat library resolves the java binary incompatibility that library developers face when using Kotlin data classes.
-In a nutshell, the issue that library developers have when using data classes in combination with supporting the Java language, is that every change to a data class definition will result in major breaking change. This project attempts to resolve this binary incompatibility by metaprogramming using annotaitons. Users can still rely on using data classes, but the generated implementation will comply for Java comsumption.
+The Data-compat library resolves the Java binary incompatibility that library developers face when using Kotlin data classes. In a nutshell, every change to a data class results in major breaking change. This project attempts to resolve this binary incompatibility by using annotation processing. Users can keep using their original data classes, but the generated code will compatible for Java consumption.
 
 To read more about this incompatibility, please refer to Jake Wharton's [Public API challenges in Kotlin](https://jakewharton.com/public-api-challenges-in-kotlin/) blogpost.
 
 ### How
-Data-compat uses [Kotlin Symbol Processing API (KSP)](https://kotlinlang.org/docs/ksp-overview.html) in combination with [KotlinPoet](https://square.github.io/kotlinpoet/) to generate Kotlin classes that are Java binary compatible. Input for the system is a private data class that supports a `@DataCompat` annotation. The code generator will output a class that supports a builder pattern.
+Data-compat uses [Kotlin Symbol Processing API (KSP)](https://kotlinlang.org/docs/ksp-overview.html) in combination with [KotlinPoet](https://square.github.io/kotlinpoet/) to generate Kotlin classes that are Java binary compatible. Input for the system is a private data class that supports a `@DataCompat` annotation, library developers can easily convert their existing data classes but make them private and add the required annotation. The code generator will output a Kotlin class that supports a builder pattern compatible for Java usage.
 
 #### Input
 
