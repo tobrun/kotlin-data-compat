@@ -10,7 +10,6 @@ class DataCompatProcessorProvider : SymbolProcessorProvider {
         return DataCompatProcessor(
             environment.codeGenerator,
             environment.logger,
-            environment.options
         )
     }
 }

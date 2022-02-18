@@ -4,11 +4,13 @@ import com.google.devtools.ksp.isPrivate
 import com.google.devtools.ksp.processing.*
 import com.google.devtools.ksp.symbol.*
 import com.google.devtools.ksp.validate
-import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ksp.toTypeName
+import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.writeTo
 import com.tobrun.datacompat.annotation.DataCompat
+import java.util.Objects
+import kotlin.math.log
 
 /**
  * [DataCompatProcessor] is a concrete instance of the [SymbolProcessor] interface.
@@ -19,11 +21,10 @@ import com.tobrun.datacompat.annotation.DataCompat
 class DataCompatProcessor(
     private val codeGenerator: CodeGenerator,
     private val logger: KSPLogger,
-    private val options: Map<String, String>
 ) : SymbolProcessor {
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
-        logger.info("DataCompatProcessor: generating code")
+        logger.info("DataCompatProcessor: process")
         val annotated = resolver.getSymbolsWithAnnotation(DataCompat::class.qualifiedName!!, true)
         if (annotated.count() == 0) {
             logger.info("No DataCompat annotations found for processing")
@@ -93,17 +94,63 @@ class DataCompatProcessor(
             // Cleanup class name by dropping Data part
             // TODO make this part more flexible with providing name inside the annotation
             val className = classDeclarationName.dropLast(4)
+
+            // Align KSP properties with KoltinPoet TypeNames
+            val propertyTypeMap = mutableMapOf<KSPropertyDeclaration, TypeName>()
+            val properties = classDeclaration.getAllProperties()
+            for (property in properties) {
+                val classTypeParams = classDeclaration.typeParameters.toTypeParameterResolver()
+                val typeName = property.type.resolve().toTypeName(classTypeParams)
+                propertyTypeMap[property] = typeName
+            }
+
+            // KotlinPoet class builder
+            val classBuilder = TypeSpec.classBuilder(className).apply {
+
+                // Constructor
+                val constructorBuilder = FunSpec.constructorBuilder()
+                constructorBuilder.addModifiers(KModifier.PRIVATE)
+                for (entry in propertyTypeMap) {
+                    constructorBuilder.addParameter(entry.key.toString(), entry.value)
+                }
+                primaryConstructor(constructorBuilder.build())
+
+                // Property initializers
+                for (entry in propertyTypeMap) {
+                    addProperty(PropertySpec.builder(entry.key.toString(), entry.value)
+                        .initializer(entry.key.toString())
+                        .build())
+                }
+
+                // Function toString
+                addFunction(FunSpec.builder("toString")
+                    .addModifiers(KModifier.OVERRIDE)
+                    .addStatement(propertyTypeMap.keys.joinToString(
+                        prefix = "return \"$className(",
+                        transform = { "$it=$$it" },
+                        postfix = ")\""
+                    ))
+                    .build()
+                )
+
+                // Function hashCode
+                addFunction(FunSpec.builder("hashCode")
+                    .addModifiers(KModifier.OVERRIDE)
+                    .addStatement(propertyTypeMap.keys.joinToString(
+                        prefix = "return Objects.hash(",
+                        separator = ", ",
+                        postfix = ")"
+                    ))
+                    .returns(Int::class)
+                    .build()
+                )
+
+            }
+
             // TODO add actual implementation conform to https://jakewharton.com/public-api-challenges-in-kotlin/
             val fileKotlinPoet = FileSpec.builder(packageName, className)
-                .addType(
-                    TypeSpec.classBuilder(className)
-                        .addProperty(
-                            PropertySpec.builder("enabled", Boolean::class)
-                                .initializer(options["enabled"] ?: "false")
-                                .build()
-                        )
-                        .build()
-                )
+                .addImport("java.util", "Objects")
+                .addType(classBuilder.build())
                 .build()
 
             fileKotlinPoet.writeTo(codeGenerator = codeGenerator, aggregating = false)
