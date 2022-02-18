@@ -2,12 +2,12 @@
 
 ### Context
 The Data-compat library resolves the java binary incompatibility that library developers face when using Kotlin data classes.
-In a nutshell, the issue that library developers have when using data classes in combination with supporting the Java language, is that every change to a data class definition will result in major breaking change. This. This Project attempts to resolve this binary incompatibility by metaprogramming using annotaitons, users can still rely on using data classes but the generated implementation will comply for Java comsumption.
+In a nutshell, the issue that library developers have when using data classes in combination with supporting the Java language, is that every change to a data class definition will result in major breaking change. This project attempts to resolve this binary incompatibility by metaprogramming using annotaitons. Users can still rely on using data classes, but the generated implementation will comply for Java comsumption.
 
-To read more about this incompatibility, please refer to Jake Wharton's [Public API challenges in Kotlin](https://jakewharton.com/public-api-challenges-in-kotlin/) blogpost
+To read more about this incompatibility, please refer to Jake Wharton's [Public API challenges in Kotlin](https://jakewharton.com/public-api-challenges-in-kotlin/) blogpost.
 
 ### How
-Data-compat uses [Kotlin Symbol Processing API (KSP)](https://kotlinlang.org/docs/ksp-overview.html) in combination with [KotlinPoet](https://square.github.io/kotlinpoet/) to generate Kotlin classes that are Java binary compatible. Input for the system is a private Data class that supports a `@DataCompat` annotation. The code generator will output a class that supports a builder pattern.
+Data-compat uses [Kotlin Symbol Processing API (KSP)](https://kotlinlang.org/docs/ksp-overview.html) in combination with [KotlinPoet](https://square.github.io/kotlinpoet/) to generate Kotlin classes that are Java binary compatible. Input for the system is a private data class that supports a `@DataCompat` annotation. The code generator will output a class that supports a builder pattern.
 
 #### Input
 
