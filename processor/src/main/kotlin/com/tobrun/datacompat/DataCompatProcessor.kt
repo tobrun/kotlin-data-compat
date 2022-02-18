@@ -10,6 +10,12 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.ksp.writeTo
 import com.tobrun.datacompat.annotation.DataCompat
 
+/**
+ * [DataCompatProcessor] is a concrete instance of the [SymbolProcessor] interface.
+ * This processor supports multiple round execution, it may return a list of deferred DataCompat annotated symbols.
+ * Exceptions or implementation errors will result in a termination of processing immediately and be logged as an error
+ * in KSPLogger.
+ */
 class DataCompatProcessor(
     private val codeGenerator: CodeGenerator,
     private val logger: KSPLogger,
@@ -17,16 +23,15 @@ class DataCompatProcessor(
 ) : SymbolProcessor {
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
-        logger.warn("DataCompatProcessor: generating code")
+        logger.info("DataCompatProcessor: generating code")
         val annotated = resolver.getSymbolsWithAnnotation(DataCompat::class.qualifiedName!!, true)
         if (annotated.count() == 0) {
-            logger.warn("No DataCompat annotations found for processing")
+            logger.info("No DataCompat annotations found for processing")
             return emptyList()
         }
 
         val unableToProcess = annotated.filterNot { it.validate() }
-        annotated.filter { it is KSClassDeclaration && it.validate() }
-            .forEach { it.accept(Visitor(), Unit) }
+        annotated.filter { it is KSClassDeclaration && it.validate() }.forEach { it.accept(Visitor(), Unit) }
         return unableToProcess.toList()
     }
 
