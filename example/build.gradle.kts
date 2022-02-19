@@ -15,7 +15,7 @@ dependencies {
 }
 
 sourceSets.main {
-    java.srcDirs("src/main/kotlin")
+    java.srcDirs("src/main/kotlin", "build/generated/ksp/main/kotlin")
 }
 
 ksp {
