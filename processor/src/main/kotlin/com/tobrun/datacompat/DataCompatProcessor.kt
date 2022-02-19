@@ -9,8 +9,6 @@ import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.writeTo
 import com.tobrun.datacompat.annotation.DataCompat
-import java.util.Objects
-import kotlin.math.log
 
 /**
  * [DataCompatProcessor] is a concrete instance of the [SymbolProcessor] interface.
@@ -147,15 +145,70 @@ class DataCompatProcessor(
 
             }
 
-            // TODO add actual implementation conform to https://jakewharton.com/public-api-challenges-in-kotlin/
-            val fileKotlinPoet = FileSpec.builder(packageName, className)
+            // Builder pattern
+            val builderBuilder = TypeSpec.classBuilder("Builder")
+            for (entry in propertyTypeMap) {
+                val propertyName = entry.key.toString()
+                val nullableType = entry.value.copy(nullable = true)
+                builderBuilder.addProperty(PropertySpec.builder(propertyName, nullableType)
+                    .initializer(CodeBlock.builder()
+                        .add("null")
+                        .build()
+                    )
+                    .addAnnotation(
+                        AnnotationSpec.builder(JvmSynthetic::class)
+                            .useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
+                            .build()
+                    )
+                    .mutable()
+                    .build())
+                builderBuilder.addFunction(FunSpec.builder("set${propertyName.capitalize()}")
+                    .addParameter(propertyName, nullableType)
+                    .addStatement("this.${propertyName} = $propertyName")
+                    .addStatement("return this")
+                    .returns(ClassName(packageName, className, "Builder"))
+                    .build()
+                )
+            }
+            builderBuilder.addFunction(FunSpec.builder("build")
+                .addStatement(propertyTypeMap.keys.joinToString(
+                    prefix = "return $className(",
+                    transform = {
+                               "$it!!"
+                    },
+                    separator = ", ",
+                    postfix = ")"
+                ))
+                .returns(ClassName(packageName, className))
+                .build()
+            )
+            classBuilder.addType(builderBuilder.build())
+
+            // initializer function
+            val initializerFunctionBuilder = FunSpec.builder("Person")
+                .returns(ClassName(packageName, className))
+                .addAnnotation(JvmSynthetic::class)
+                .addParameter(
+                    ParameterSpec.builder("initializer",
+                        LambdaTypeName.get(
+                            ClassName(packageName, className, "Builder"),
+                            emptyList(),
+                            ClassName("kotlin", "Unit")
+                        )
+                    ).build()
+                )
+                .addStatement("return $className.Builder().apply(initializer).build()")
+
+            val fileBuilder = FileSpec.builder(packageName, className)
                 .addImport("java.util", "Objects")
                 .addType(classBuilder.build())
-                .build()
+                .addFunction(initializerFunctionBuilder.build())
 
-            fileKotlinPoet.writeTo(codeGenerator = codeGenerator, aggregating = false)
+            fileBuilder.build().writeTo(codeGenerator = codeGenerator, aggregating = false)
         }
     }
 
     private fun KSClassDeclaration.isDataClass() = modifiers.contains(Modifier.DATA)
 }
+
+
