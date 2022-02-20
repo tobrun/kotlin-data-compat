@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm")
     id("com.google.devtools.ksp")
+    id("io.gitlab.arturbosch.detekt") version "1.19.0"
 }
 
 group = "com.tobrun.datacompat"
@@ -23,6 +24,7 @@ dependencies {
     implementation("com.squareup:kotlinpoet:1.10.2")
     implementation("com.squareup:kotlinpoet-ksp:1.10.2")
     ksp("dev.zacsweers.autoservice:auto-service-ksp:1.0.0")
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.19.0")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
