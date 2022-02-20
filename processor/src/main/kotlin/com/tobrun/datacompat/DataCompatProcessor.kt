@@ -1,10 +1,28 @@
 package com.tobrun.datacompat
 
 import com.google.devtools.ksp.isPrivate
-import com.google.devtools.ksp.processing.*
-import com.google.devtools.ksp.symbol.*
+import com.google.devtools.ksp.processing.CodeGenerator
+import com.google.devtools.ksp.processing.KSPLogger
+import com.google.devtools.ksp.processing.Resolver
+import com.google.devtools.ksp.processing.SymbolProcessor
+import com.google.devtools.ksp.symbol.KSAnnotated
+import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSPropertyDeclaration
+import com.google.devtools.ksp.symbol.KSVisitorVoid
+import com.google.devtools.ksp.symbol.Modifier
 import com.google.devtools.ksp.validate
-import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ANY
+import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.writeTo
@@ -36,6 +54,7 @@ class DataCompatProcessor(
 
     private inner class Visitor : KSVisitorVoid() {
 
+        @Suppress("LongMethod")
         override fun visitClassDeclaration(classDeclaration: KSClassDeclaration, data: Unit) {
             if (isInvalidAnnotatedSetup(classDeclaration)) {
                 return
@@ -43,7 +62,7 @@ class DataCompatProcessor(
 
             // Cleanup class name by dropping Data part
             // TODO make this part more flexible with providing name inside the annotation
-            val className = classDeclaration.simpleName.asString().dropLast(4)
+            val className = classDeclaration.simpleName.asString().dropLast(CLASS_NAME_DROP_LAST_CHARACTERS)
             val packageName = classDeclaration.packageName.asString()
 
             // Map KSP properties with KoltinPoet TypeNames
@@ -119,7 +138,6 @@ class DataCompatProcessor(
                         .returns(Int::class)
                         .build()
                 )
-
             }
 
             // Builder pattern
@@ -145,7 +163,7 @@ class DataCompatProcessor(
                 builderBuilder.addFunction(
                     FunSpec.builder("set${propertyName.capitalize()}")
                         .addParameter(propertyName, nullableType)
-                        .addStatement("this.${propertyName} = $propertyName")
+                        .addStatement("this.$propertyName = $propertyName")
                         .addStatement("return this")
                         .returns(ClassName(packageName, className, "Builder"))
                         .build()
@@ -154,22 +172,23 @@ class DataCompatProcessor(
 
             val buildFunction = FunSpec.builder("build")
             for (property in propertyMap) {
-                if(!property.value.isNullable){
+                if (!property.value.isNullable) {
                     buildFunction.addStatement("if (${property.key}==null) {")
-                    buildFunction.addStatement("\tthrow IllegalArgumentException(\"Null ${property.key} found when building $className.\")")
+                    val exceptionMessage = "Null ${property.key} found when building $className."
+                    buildFunction.addStatement("\tthrow IllegalArgumentException(\"$exceptionMessage\")")
                     buildFunction.addStatement("}")
                 }
             }
             buildFunction.addStatement(
-                    propertyMap.keys.joinToString(
-                        prefix = "return $className(",
-                        transform = {
-                            "$it!!"
-                        },
-                        separator = ", ",
-                        postfix = ")"
-                    )
+                propertyMap.keys.joinToString(
+                    prefix = "return $className(",
+                    transform = {
+                        "$it!!"
+                    },
+                    separator = ", ",
+                    postfix = ")"
                 )
+            )
                 .returns(ClassName(packageName, className))
 
             builderBuilder.addFunction(buildFunction.build())
@@ -201,6 +220,7 @@ class DataCompatProcessor(
             fileBuilder.build().writeTo(codeGenerator = codeGenerator, aggregating = false)
         }
 
+        @Suppress("ReturnCount")
         private fun isInvalidAnnotatedSetup(classDeclaration: KSClassDeclaration): Boolean {
             val qualifiedName = classDeclaration.qualifiedName?.asString() ?: run {
                 logger.error(
@@ -246,6 +266,8 @@ class DataCompatProcessor(
     }
 
     private fun KSClassDeclaration.isDataClass() = modifiers.contains(Modifier.DATA)
+
+    private companion object {
+        private const val CLASS_NAME_DROP_LAST_CHARACTERS = 4
+    }
 }
-
-
