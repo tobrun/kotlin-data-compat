@@ -1,0 +1,26 @@
+name: Build Library
+
+on: pull_request
+
+jobs:
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/prepare-environment
+        name: Prepare environment
+
+      - name: Run Static Analysis
+        run: ./gradlew detekt
+
+  build-library:
+    needs: [static-analysis]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/prepare-environment
+        name: Prepare environment
+
+      - name: Build Library
+        run: ./gradlew assemble
