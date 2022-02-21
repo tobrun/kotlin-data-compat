@@ -183,7 +183,7 @@ class DataCompatProcessor(
                 propertyMap.keys.joinToString(
                     prefix = "return $className(",
                     transform = {
-                        "$it!!"
+                        if (propertyMap[it]!!.isNullable) "$it" else "$it!!"
                     },
                     separator = ", ",
                     postfix = ")"
