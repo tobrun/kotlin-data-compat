@@ -54,7 +54,7 @@ class DataCompatProcessor(
 
     private inner class Visitor : KSVisitorVoid() {
 
-        @Suppress("LongMethod")
+        @Suppress("LongMethod", "MaxLineLength", "ComplexMethod")
         override fun visitClassDeclaration(classDeclaration: KSClassDeclaration, data: Unit) {
             if (isInvalidAnnotatedSetup(classDeclaration)) {
                 return
@@ -63,6 +63,7 @@ class DataCompatProcessor(
             // Cleanup class name by dropping Data part
             // TODO make this part more flexible with providing name inside the annotation
             val className = classDeclaration.simpleName.asString().dropLast(CLASS_NAME_DROP_LAST_CHARACTERS)
+            val classKdoc = classDeclaration.docString
             val packageName = classDeclaration.packageName.asString()
 
             // Map KSP properties with KoltinPoet TypeNames
@@ -73,8 +74,31 @@ class DataCompatProcessor(
                 propertyMap[property] = typeName
             }
 
+            // Build property list for kdoc
+
+            val kdocPropertyList = classKdoc?.let { doc ->
+                doc.split("\n")
+                    .filter { it.isNotEmpty() && it.contains("@property") }
+                    .map { it.substringAfter("$KDOC_PROPERTY_ANNOTATION ") }
+            } ?: emptyList()
+
             // KotlinPoet class builder
             val classBuilder = TypeSpec.classBuilder(className).apply {
+                classKdoc?.let {
+                    addKdoc(
+                        classKdoc.split("\n")
+                            .filter { it.isNotEmpty() }.joinToString(
+                                separator = "\n",
+                                transform = {
+                                    if (it.startsWith(" ")) {
+                                        it.substring(1)
+                                    } else {
+                                        it
+                                    }
+                                }
+                            )
+                    )
+                }
 
                 // Constructor
                 val constructorBuilder = FunSpec.constructorBuilder()
@@ -160,8 +184,25 @@ class DataCompatProcessor(
                         .mutable()
                         .build()
                 )
+
+                var kDocProperty = kdocPropertyList
+                    .filter { it.startsWith("$propertyName ") }
+                    .joinToString { it.substringAfter("$propertyName ").toLowerCase() }
+
+                if (kDocProperty.isEmpty()) {
+                    kDocProperty = propertyName
+                }
+
                 builderBuilder.addFunction(
                     FunSpec.builder("set${propertyName.capitalize()}")
+                        .addKdoc(
+                            """
+                            |Set $kDocProperty
+                            |
+                            |@param $propertyName $kDocProperty
+                            |@return Builder
+                            """.trimMargin()
+                        )
                         .addParameter(propertyName, nullableType)
                         .addStatement("this.$propertyName = $propertyName")
                         .addStatement("return this")
@@ -171,6 +212,15 @@ class DataCompatProcessor(
             }
 
             val buildFunction = FunSpec.builder("build")
+            buildFunction.addKdoc(
+                """
+                |Returns a [$className] reference to the object being constructed by the builder.
+                |
+                |Throws an [IllegalArgumentException] when a non-null property wasn't initialised.
+                |
+                |@return $className
+                """.trimMargin()
+            )
             for (property in propertyMap) {
                 if (!property.value.isNullable) {
                     buildFunction.addStatement("if (${property.key}==null) {")
@@ -191,12 +241,32 @@ class DataCompatProcessor(
             )
                 .returns(ClassName(packageName, className))
 
+            builderBuilder.addKdoc(
+                """
+                |Composes and builds a [$className] object.
+                |
+                |This is a concrete implementation of the builder design pattern.
+                |
+                |${kdocPropertyList.joinToString(
+                    prefix = "$KDOC_PROPERTY_ANNOTATION ",
+                    separator = "\n$KDOC_PROPERTY_ANNOTATION "
+                )}
+                """.trimMargin()
+            )
             builderBuilder.addFunction(buildFunction.build())
 
             classBuilder.addType(builderBuilder.build())
 
             // initializer function
             val initializerFunctionBuilder = FunSpec.builder(className)
+                .addKdoc(
+                    """
+                    |Creates a [$className] through a DSL-style builder.
+                    |
+                    |@param initializer the intialisation block
+                    |@return $className
+                    """.trimMargin()
+                )
                 .returns(ClassName(packageName, className))
                 .addAnnotation(JvmSynthetic::class)
                 .addParameter(
@@ -269,5 +339,6 @@ class DataCompatProcessor(
 
     private companion object {
         private const val CLASS_NAME_DROP_LAST_CHARACTERS = 4
+        private const val KDOC_PROPERTY_ANNOTATION = "@property"
     }
 }
