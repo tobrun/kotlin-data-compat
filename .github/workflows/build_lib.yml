@@ -13,8 +13,25 @@ jobs:
       - name: Run Static Analysis
         run: ./gradlew detekt
 
+  unit-tests:
+    needs: [ static-analysis ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/prepare-environment
+        name: Prepare environment
+
+      - name: Run Unit Tests
+        run: ./gradlew :processor:test
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always()
+        with:
+          files: processor/build/test-results/**/*.xml
+
   build-library:
-    needs: [static-analysis]
+    needs: [unit-tests]
     runs-on: ubuntu-latest
 
     steps:

@@ -26,8 +26,8 @@ dependencies {
     ksp("dev.zacsweers.autoservice:auto-service-ksp:1.0.0")
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.19.0")
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+    testImplementation("io.kotest:kotest-runner-junit5:5.1.0")
+    testImplementation("com.github.tschuchortdev:kotlin-compile-testing-ksp:1.4.7")
 }
 
 sourceSets.main {
