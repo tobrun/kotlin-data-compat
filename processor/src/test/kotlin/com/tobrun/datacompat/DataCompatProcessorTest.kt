@@ -12,11 +12,16 @@ import io.kotest.matchers.shouldBe
 
 private val simpleTest = SourceFile.kotlin(
     "PersonData.kt",
-    """import com.tobrun.datacompat.annotation.DataCompat
+"""
+import com.tobrun.datacompat.annotation.DataCompat
 
 @DataCompat
-private data class PersonData(val name: String, val nickname: String? = null, val age: Int)
-"""
+private data class PersonData(
+    val name: String, 
+    val nickname: String? = null, 
+    val age: Int,
+)
+    """.trimIndent()
 )
 
 private class GeneratedFileData(
