@@ -10,7 +10,7 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation(project(":processor"))
+	implementation(project(":annotation"))
     ksp(project(":processor"))
 }
 

@@ -13,5 +13,6 @@ pluginManagement {
 
 rootProject.name = "data-compat"
 
+include(":annotation")
 include(":processor")
 include(":example")
