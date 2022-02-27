@@ -2,7 +2,6 @@ package com.tobrun.datacompat.utils
 
 import com.tschuchort.compiletesting.KotlinCompilation
 import java.io.File
-import java.nio.file.Files
 
 internal val KotlinCompilation.Result.kspGeneratedSources: List<File>
     get() {
@@ -14,7 +13,7 @@ internal val KotlinCompilation.Result.kspGeneratedSources: List<File>
     }
 
 internal fun KotlinCompilation.Result.getGeneratedSource(index: Int): String {
-    return Files.readString(kspGeneratedSources[index].toPath())
+    return File(kspGeneratedSources[index].toPath().toString()).readText()
 }
 
 private val KotlinCompilation.Result.workingDir: File
