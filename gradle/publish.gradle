@@ -1,0 +1,40 @@
+apply plugin: 'maven-publish'
+apply from: file('../gradle/artifact-settings.gradle')
+
+afterEvaluate {
+    publishing {
+        publications {
+            // Creates a Maven publication called "release".
+            release(MavenPublication) {
+                // Applies the component for the release build variant.
+                from components.kotlin
+
+                // You can then customize attributes of the publication as shown below.
+                groupId = project.ext.artifactGroupId
+                artifactId = project.ext.artifactId
+                version = project.ext.versionName
+
+                pom.withXml {
+                    final mainNode = asNode()
+                    mainNode.appendNode('name', project.ext.artifactTitle)
+                    mainNode.appendNode('description', project.ext.artifactTitle)
+                    mainNode.appendNode('url', project.ext.artifactUrl)
+
+                    final licenseNode = mainNode.appendNode('licenses').appendNode('license')
+                    licenseNode.appendNode('name', project.ext.artifactLicenseName)
+                    licenseNode.appendNode('url', project.ext.artifactLicenseUrl)
+                    licenseNode.appendNode('distribution', "repo")
+
+                    final developerNode = mainNode.appendNode('developers').appendNode('developer')
+                    developerNode.appendNode('id', project.ext.developerId)
+                    developerNode.appendNode('name', project.ext.developerName)
+
+                    final scmNode = mainNode.appendNode("scm")
+                    scmNode.appendNode("connection", project.ext.artifactScmUrl)
+                    scmNode.appendNode("developerConnection", project.ext.artifactScmUrl)
+                    scmNode.appendNode("url", project.ext.artifactUrl)
+                }
+            }
+        }
+    }
+}

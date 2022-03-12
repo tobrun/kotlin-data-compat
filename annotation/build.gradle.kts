@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm")
+	id("maven-publish")
 }
 
 group = "com.tobrun.datacompat"
@@ -12,4 +13,8 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib"))
+}
+
+project.apply {
+	from("$rootDir/gradle/publish.gradle")
 }
