@@ -1,0 +1,14 @@
+ext {
+    artifactGroupId = project.property('POM_GROUP_ID')
+    artifactId = project.property('POM_ARTIFACT_ID')
+    artifactTitle = project.property('POM_ARTIFACT_TITLE')
+    artifactDescription = project.property('POM_DESCRIPTION')
+    developerName = 'Tobrun'
+    developerId = 'tobrun'
+    artifactUrl = 'https://github.com/tobrun/data-compat'
+    artifactVcsUrl = 'https://github.com/tobrun/data-compat.git'
+    artifactScmUrl = 'scm:git@github.com/tobrun/data-compat.git'
+    artifactLicenseName = 'Apache-2.0'
+    artifactLicenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0'
+    versionName = project.property('VERSION_NAME')
+}

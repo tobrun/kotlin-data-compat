@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm")
     id("com.google.devtools.ksp")
     id("io.gitlab.arturbosch.detekt") version "1.19.0"
+	id("maven-publish")
 }
 
 group = "com.tobrun.datacompat"
@@ -28,6 +29,8 @@ dependencies {
 
     testImplementation("io.kotest:kotest-runner-junit5:5.1.0")
     testImplementation("com.github.tschuchortdev:kotlin-compile-testing-ksp:1.4.7")
+
+	implementation(project(":annotation"))
 }
 
 sourceSets.main {
@@ -40,4 +43,8 @@ tasks.getByName<Test>("test") {
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     kotlinOptions.freeCompilerArgs += "-Xopt-in=com.squareup.kotlinpoet.ksp.KotlinPoetKspPreview"
+}
+
+project.apply {
+	from("$rootDir/gradle/publish.gradle")
 }
