@@ -123,9 +123,9 @@ class DataCompatProcessor(
                         .addModifiers(KModifier.OVERRIDE)
                         .addStatement(
                             propertyMap.keys.joinToString(
-                                prefix = "return \"$className(",
+                                prefix = "return \"\"\"$className(",
                                 transform = { "$it=$$it" },
-                                postfix = ")\""
+                                postfix = ")\"\"\".trimIndent()"
                             )
                         )
                         .build()
