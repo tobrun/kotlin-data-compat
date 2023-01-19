@@ -132,17 +132,18 @@ class DataCompatProcessor(
                 )
 
                 // Function equals
-                val equalsStatementList = mutableListOf("other is $className")
-                for (entry in propertyMap) {
-                    equalsStatementList.add("&& ${entry.key} == other.${entry.key}")
-                }
                 val equalsBuilder = FunSpec.builder("equals")
                     .addModifiers(KModifier.OVERRIDE)
                     .addParameter("other", ANY.copy(nullable = true))
+                    .addStatement("if (this === other) return true")
+                    .addStatement("if (javaClass != other?.javaClass) return false")
+                    .addStatement("other as $className")
                     .addStatement(
-                        equalsStatementList.joinToString(
+                        propertyMap.keys.joinToString(
                             prefix = "return ",
-                            separator = "\n\t\t"
+                            separator = " && ",
+                            transform = { "$it == other.$it" },
+                            postfix = ""
                         )
                     )
                     .returns(Boolean::class)
