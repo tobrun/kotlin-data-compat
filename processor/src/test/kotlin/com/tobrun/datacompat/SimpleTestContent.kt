@@ -1,5 +1,6 @@
 package com.tobrun.datacompat
 
+@Suppress("MaxLineLength")
 internal val expectedSimpleTestContent = """
     import java.util.Objects
     import kotlin.Any

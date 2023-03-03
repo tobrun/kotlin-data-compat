@@ -5,7 +5,12 @@ import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessor
-import com.google.devtools.ksp.symbol.*
+import com.google.devtools.ksp.symbol.ClassKind
+import com.google.devtools.ksp.symbol.KSAnnotated
+import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSPropertyDeclaration
+import com.google.devtools.ksp.symbol.KSVisitorVoid
+import com.google.devtools.ksp.symbol.Modifier
 import com.google.devtools.ksp.validate
 import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.AnnotationSpec
@@ -46,7 +51,8 @@ class DataCompatProcessor(
         }
 
         val unableToProcess = annotated.filterNot { it.validate() }
-        annotated.filter { it is KSClassDeclaration && it.validate() }.forEach { it.accept(Visitor(), Unit) }
+        annotated.filter { it is KSClassDeclaration && it.validate() }
+            .forEach { it.accept(Visitor(), Unit) }
         return unableToProcess.toList()
     }
 
@@ -60,7 +66,8 @@ class DataCompatProcessor(
 
             // Cleanup class name by dropping Data part
             // TODO make this part more flexible with providing name inside the annotation
-            val className = classDeclaration.simpleName.asString().dropLast(CLASS_NAME_DROP_LAST_CHARACTERS)
+            val className =
+                classDeclaration.simpleName.asString().dropLast(CLASS_NAME_DROP_LAST_CHARACTERS)
             val classKdoc = classDeclaration.docString
             val packageName = classDeclaration.packageName.asString()
 
@@ -206,19 +213,24 @@ class DataCompatProcessor(
 
                 var kDocProperty = kdocPropertyList
                     .filter { it.startsWith("$propertyName ") }
-                    .joinToString { it.substringAfter("$propertyName ")
-                        .lowercase(Locale.getDefault()) }
+                    .joinToString {
+                        it.substringAfter("$propertyName ").lowercase(Locale.getDefault())
+                    }
 
                 if (kDocProperty.isEmpty()) {
                     kDocProperty = propertyName
                 }
 
                 builderBuilder.addFunction(
-                    FunSpec.builder("set${propertyName.replaceFirstChar {
-                        if (it.isLowerCase()) it.titlecase(
-                            Locale.getDefault()
-                        ) else it.toString()
-                    }}")
+                    FunSpec.builder(
+                        "set${
+                            propertyName.replaceFirstChar {
+                                if (it.isLowerCase()) it.titlecase(
+                                    Locale.getDefault()
+                                ) else it.toString()
+                            }
+                        }"
+                    )
                         .addKdoc(
                             """
                             |Set $kDocProperty
@@ -271,10 +283,12 @@ class DataCompatProcessor(
                 |
                 |This is a concrete implementation of the builder design pattern.
                 |
-                |${kdocPropertyList.joinToString(
-                    prefix = "$KDOC_PROPERTY_ANNOTATION ",
-                    separator = "\n$KDOC_PROPERTY_ANNOTATION "
-                )}
+                |${
+                    kdocPropertyList.joinToString(
+                        prefix = "$KDOC_PROPERTY_ANNOTATION ",
+                        separator = "\n$KDOC_PROPERTY_ANNOTATION "
+                    )
+                }
                 """.trimMargin()
             )
             builderBuilder.addFunction(buildFunction.build())
