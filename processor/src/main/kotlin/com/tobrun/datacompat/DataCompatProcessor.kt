@@ -144,7 +144,7 @@ class DataCompatProcessor(
                 addFunction(
                     FunSpec.builder("toString")
                         .addModifiers(KModifier.OVERRIDE)
-                        // `·` below is a non-breaking space
+                        // using triple quote for long strings
                         .addStatement(
                             propertyMap.keys.joinToString(
                                 prefix = "return \"\"\"$className(",
