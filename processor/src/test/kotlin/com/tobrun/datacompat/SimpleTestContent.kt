@@ -4,6 +4,7 @@ internal val expectedSimpleTestContent = """
     import java.util.Objects
     import kotlin.Any
     import kotlin.Boolean
+    import kotlin.Deprecated
     import kotlin.Int
     import kotlin.String
     import kotlin.Unit
@@ -15,11 +16,12 @@ internal val expectedSimpleTestContent = """
      * @property nickname The nickname.
      * @property age The age.
      */
+    @Deprecated
     public class Person private constructor(
       public val name: String,
       public val nickname: String?,
       public val age: Int
-    ) {
+    ) : EmptyInterface {
       public override fun toString() = "Person(name=%name, nickname=%nickname, age=%age)"
     
       public override fun equals(other: Any?): Boolean {
@@ -105,7 +107,7 @@ internal val expectedSimpleTestContent = """
     /**
      * Creates a [Person] through a DSL-style builder.
      *
-     * @param initializer the intialisation block
+     * @param initializer the initialisation block
      * @return Person
      */
     @JvmSynthetic

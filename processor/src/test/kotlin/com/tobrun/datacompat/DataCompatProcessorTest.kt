@@ -14,15 +14,18 @@ private val simpleTest = SourceFile.kotlin(
     "PersonData.kt",
 """
 import com.tobrun.datacompat.annotation.DataCompat
+import java.util.function.Consumer
 
+interface EmptyInterface
 /**
  * Represents a person.
  * @property name The full name.
  * @property nickname The nickname.
  * @property age The age.
  */
+@Deprecated
 @DataCompat
-private data class PersonData(val name: String, val nickname: String? = null, val age: Int)
+private data class PersonData(val name: String, val nickname: String? = null, val age: Int) : EmptyInterface
     """.trimIndent()
 )
 

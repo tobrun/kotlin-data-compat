@@ -23,6 +23,7 @@ import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.writeTo
@@ -66,6 +67,12 @@ class DataCompatProcessor(
             val classKdoc = classDeclaration.docString
             val packageName = classDeclaration.packageName.asString()
 
+            val otherAnnotations = classDeclaration.annotations
+                .filter { it.annotationType.resolve().toString() != DataCompat::class.simpleName }
+            // TODO tbh we actually should support only non-parametrized interfaces,
+            //  but checking just if KSClassDeclaration for simplicity
+            val implementedInterfaces = classDeclaration.superTypes.filter { it.resolve().declaration is KSClassDeclaration }
+
             // Map KSP properties with KoltinPoet TypeNames
             val propertyMap = mutableMapOf<KSPropertyDeclaration, TypeName>()
             for (property in classDeclaration.getAllProperties()) {
@@ -100,6 +107,18 @@ class DataCompatProcessor(
                     )
                 }
 
+                otherAnnotations.forEach {
+                    addAnnotation(
+                        it.annotationType.resolve().toClassName()
+                    )
+                }
+
+                implementedInterfaces.forEach {
+                    addSuperinterface(
+                        it.resolve().toClassName()
+                    )
+                }
+
                 // Constructor
                 val constructorBuilder = FunSpec.constructorBuilder()
                 constructorBuilder.addModifiers(KModifier.PRIVATE)
@@ -121,8 +140,10 @@ class DataCompatProcessor(
                 addFunction(
                     FunSpec.builder("toString")
                         .addModifiers(KModifier.OVERRIDE)
+                        // `·` below is a non-breaking space
                         .addStatement(
                             propertyMap.keys.joinToString(
+                                separator = ",·",
                                 prefix = "return \"$className(",
                                 transform = { "$it=$$it" },
                                 postfix = ")\""
@@ -264,7 +285,7 @@ class DataCompatProcessor(
                     """
                     |Creates a [$className] through a DSL-style builder.
                     |
-                    |@param initializer the intialisation block
+                    |@param initializer the initialisation block
                     |@return $className
                     """.trimMargin()
                 )
