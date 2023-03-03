@@ -71,7 +71,9 @@ class DataCompatProcessor(
                 .filter { it.annotationType.resolve().toString() != DataCompat::class.simpleName }
             // TODO tbh we actually should support only non-parametrized interfaces,
             //  but checking just if KSClassDeclaration for simplicity
-            val implementedInterfaces = classDeclaration.superTypes.filter { it.resolve().declaration is KSClassDeclaration }
+            val implementedInterfaces = classDeclaration
+                .superTypes
+                .filter { it.resolve().declaration is KSClassDeclaration }
 
             // Map KSP properties with KoltinPoet TypeNames
             val propertyMap = mutableMapOf<KSPropertyDeclaration, TypeName>()
