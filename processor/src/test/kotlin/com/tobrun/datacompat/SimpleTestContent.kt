@@ -1,6 +1,5 @@
 package com.tobrun.datacompat
 
-@Suppress("MaxLineLength")
 internal val expectedSimpleTestContent = """
     import java.util.Objects
     import kotlin.Any
@@ -25,8 +24,8 @@ internal val expectedSimpleTestContent = """
       public val age: Int,
       public val veryLongAndVeryDetailedDescription: String?
     ) : EmptyInterface, EmptyInterface2 {
-      public override fun toString() =
-          "Person(name=%name, nickname=%nickname, age=%age, veryLongAndVeryDetailedDescription=%veryLongAndVeryDetailedDescription)"
+      public override fun toString() = ""${"\""}Person(name=%name, nickname=%nickname, age=%age,
+          veryLongAndVeryDetailedDescription=%veryLongAndVeryDetailedDescription)""${"\""}.trimIndent()
     
       public override fun equals(other: Any?): Boolean {
         if (this === other) return true

@@ -147,10 +147,9 @@ class DataCompatProcessor(
                         // `·` below is a non-breaking space
                         .addStatement(
                             propertyMap.keys.joinToString(
-                                separator = ",·",
-                                prefix = "return \"$className(",
+                                prefix = "return \"\"\"$className(",
                                 transform = { "$it=$$it" },
-                                postfix = ")\""
+                                postfix = ")\"\"\".trimIndent()"
                             )
                         )
                         .build()
