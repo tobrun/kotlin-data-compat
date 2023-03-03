@@ -14,7 +14,6 @@ private val simpleTest = SourceFile.kotlin(
     "PersonData.kt",
 """
 import com.tobrun.datacompat.annotation.DataCompat
-import java.util.function.Consumer
 
 interface EmptyInterface
 /**
