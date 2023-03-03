@@ -29,7 +29,7 @@ import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.writeTo
 import com.tobrun.datacompat.annotation.DataCompat
-import java.util.*
+import java.util.Locale
 
 /**
  * [DataCompatProcessor] is a concrete instance of the [SymbolProcessor] interface.
@@ -221,15 +221,12 @@ class DataCompatProcessor(
                 }
 
                 builderBuilder.addFunction(
-                    FunSpec.builder(
-                        "set${
-                            propertyName.replaceFirstChar {
-                                if (it.isLowerCase()) it.titlecase(
-                                    Locale.getDefault()
-                                ) else it.toString()
-                            }
-                        }"
-                    )
+                    FunSpec
+                        .builder(
+                            "set${propertyName.replaceFirstChar {
+                                if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+                            }}"
+                        )
                         .addKdoc(
                             """
                             |Set $kDocProperty
@@ -283,10 +280,10 @@ class DataCompatProcessor(
                 |This is a concrete implementation of the builder design pattern.
                 |
                 |${
-                    kdocPropertyList.joinToString(
-                        prefix = "$KDOC_PROPERTY_ANNOTATION ",
-                        separator = "\n$KDOC_PROPERTY_ANNOTATION "
-                    )
+                kdocPropertyList.joinToString(
+                    prefix = "$KDOC_PROPERTY_ANNOTATION ",
+                    separator = "\n$KDOC_PROPERTY_ANNOTATION "
+                )
                 }
                 """.trimMargin()
             )
