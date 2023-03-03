@@ -24,6 +24,7 @@ import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.writeTo
 import com.tobrun.datacompat.annotation.DataCompat
+import java.util.*
 
 /**
  * [DataCompatProcessor] is a concrete instance of the [SymbolProcessor] interface.
@@ -205,14 +206,19 @@ class DataCompatProcessor(
 
                 var kDocProperty = kdocPropertyList
                     .filter { it.startsWith("$propertyName ") }
-                    .joinToString { it.substringAfter("$propertyName ").toLowerCase() }
+                    .joinToString { it.substringAfter("$propertyName ")
+                        .lowercase(Locale.getDefault()) }
 
                 if (kDocProperty.isEmpty()) {
                     kDocProperty = propertyName
                 }
 
                 builderBuilder.addFunction(
-                    FunSpec.builder("set${propertyName.capitalize()}")
+                    FunSpec.builder("set${propertyName.replaceFirstChar {
+                        if (it.isLowerCase()) it.titlecase(
+                            Locale.getDefault()
+                        ) else it.toString()
+                    }}")
                         .addKdoc(
                             """
                             |Set $kDocProperty

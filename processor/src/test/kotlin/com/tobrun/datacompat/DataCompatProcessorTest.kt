@@ -22,10 +22,16 @@ interface EmptyInterface2
  * @property name The full name.
  * @property nickname The nickname.
  * @property age The age.
+ * @property veryLongAndVeryDetailedDescription The very long and very detailed description.
  */
 @Deprecated
 @DataCompat
-private data class PersonData(val name: String, val nickname: String? = null, val age: Int) : EmptyInterface, EmptyInterface2
+private data class PersonData(
+    val name: String,
+    val nickname: String? = null,
+    val age: Int,
+    val veryLongAndVeryDetailedDescription: String?
+) : EmptyInterface, EmptyInterface2
     """.trimIndent()
 )
 
