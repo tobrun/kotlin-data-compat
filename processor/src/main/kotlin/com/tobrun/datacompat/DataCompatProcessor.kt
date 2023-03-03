@@ -5,11 +5,7 @@ import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessor
-import com.google.devtools.ksp.symbol.KSAnnotated
-import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSPropertyDeclaration
-import com.google.devtools.ksp.symbol.KSVisitorVoid
-import com.google.devtools.ksp.symbol.Modifier
+import com.google.devtools.ksp.symbol.*
 import com.google.devtools.ksp.validate
 import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.AnnotationSpec
@@ -69,11 +65,9 @@ class DataCompatProcessor(
 
             val otherAnnotations = classDeclaration.annotations
                 .filter { it.annotationType.resolve().toString() != DataCompat::class.simpleName }
-            // TODO tbh we actually should support only non-parametrized interfaces,
-            //  but checking just if KSClassDeclaration for simplicity
             val implementedInterfaces = classDeclaration
                 .superTypes
-                .filter { it.resolve().declaration is KSClassDeclaration }
+                .filter { (it.resolve().declaration as? KSClassDeclaration)?.classKind == ClassKind.INTERFACE }
 
             // Map KSP properties with KoltinPoet TypeNames
             val propertyMap = mutableMapOf<KSPropertyDeclaration, TypeName>()

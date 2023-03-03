@@ -21,7 +21,7 @@ internal val expectedSimpleTestContent = """
       public val name: String,
       public val nickname: String?,
       public val age: Int
-    ) : EmptyInterface {
+    ) : EmptyInterface, EmptyInterface2 {
       public override fun toString() = "Person(name=%name, nickname=%nickname, age=%age)"
     
       public override fun equals(other: Any?): Boolean {
