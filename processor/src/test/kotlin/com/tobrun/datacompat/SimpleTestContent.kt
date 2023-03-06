@@ -50,13 +50,13 @@ internal val expectedSimpleTestContent = """
        */
       public class Builder {
         @set:JvmSynthetic
-        public var name: String? = null
+        public var name: String? = "John"
     
         @set:JvmSynthetic
         public var nickname: String? = null
     
         @set:JvmSynthetic
-        public var age: Int? = null
+        public var age: Int? = 23
 
         @set:JvmSynthetic
         public var veryLongAndVeryDetailedDescription: String? = null

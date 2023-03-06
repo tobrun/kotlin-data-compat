@@ -198,7 +198,7 @@ class DataCompatProcessor(
                     PropertySpec.builder(propertyName, nullableType)
                         .initializer(
                             CodeBlock.builder()
-                                .add("null")
+                                .add(property.key.docString!!.trimEnd())
                                 .build()
                         )
                         .addAnnotation(

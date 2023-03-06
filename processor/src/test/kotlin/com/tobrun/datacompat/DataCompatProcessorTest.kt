@@ -27,10 +27,14 @@ interface EmptyInterface2
 @Deprecated
 @DataCompat
 private data class PersonData(
-    val name: String,
+    /** "John" */
+    val name: String = "John",
+    /** null */
     val nickname: String? = null,
-    val age: Int,
-    val veryLongAndVeryDetailedDescription: String?
+    /** 23 */
+    val age: Int = 23,
+    /** null */
+    val veryLongAndVeryDetailedDescription: String? = null
 ) : EmptyInterface, EmptyInterface2
     """.trimIndent()
 )
