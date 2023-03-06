@@ -200,11 +200,17 @@ class DataCompatProcessor(
                         .addStatement(
                             propertyMap.keys.joinToString(
                                 prefix = "return Builder() .",
-                                transform = { "$it($it)" },
+                                transform = { str ->
+                                    "set${str.toString().replaceFirstChar {
+                                        if (it.isLowerCase())
+                                            it.titlecase(Locale.getDefault())
+                                        else it.toString()
+                                    }}($str)"
+                                },
                                 separator = " .",
                             )
                         )
-                        .returns(ClassName(packageName, "Builder"))
+                        .returns(ClassName("", "Builder"))
                         .build()
                 )
             }
