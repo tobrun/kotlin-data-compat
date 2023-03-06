@@ -12,17 +12,26 @@ import io.kotest.matchers.shouldBe
 
 private val simpleTest = SourceFile.kotlin(
     "PersonData.kt",
-"""
+    """
 import com.tobrun.datacompat.annotation.DataCompat
 
+interface EmptyInterface
+interface EmptyInterface2
 /**
  * Represents a person.
  * @property name The full name.
  * @property nickname The nickname.
  * @property age The age.
+ * @property veryLongAndVeryDetailedDescription The very long and very detailed description.
  */
+@Deprecated
 @DataCompat
-private data class PersonData(val name: String, val nickname: String? = null, val age: Int)
+private data class PersonData(
+    val name: String,
+    val nickname: String? = null,
+    val age: Int,
+    val veryLongAndVeryDetailedDescription: String?
+) : EmptyInterface, EmptyInterface2
     """.trimIndent()
 )
 

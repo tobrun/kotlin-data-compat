@@ -4,6 +4,7 @@ internal val expectedSimpleTestContent = """
     import java.util.Objects
     import kotlin.Any
     import kotlin.Boolean
+    import kotlin.Deprecated
     import kotlin.Int
     import kotlin.String
     import kotlin.Unit
@@ -14,22 +15,28 @@ internal val expectedSimpleTestContent = """
      * @property name The full name.
      * @property nickname The nickname.
      * @property age The age.
+     * @property veryLongAndVeryDetailedDescription The very long and very detailed description.
      */
+    @Deprecated
     public class Person private constructor(
       public val name: String,
       public val nickname: String?,
-      public val age: Int
-    ) {
-      public override fun toString() = "Person(name=%name, nickname=%nickname, age=%age)"
+      public val age: Int,
+      public val veryLongAndVeryDetailedDescription: String?
+    ) : EmptyInterface, EmptyInterface2 {
+      public override fun toString() = ""${"\""}Person(name=%name, nickname=%nickname, age=%age,
+          veryLongAndVeryDetailedDescription=%veryLongAndVeryDetailedDescription)""${"\""}.trimIndent()
     
       public override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
         other as Person
-        return name == other.name && nickname == other.nickname && age == other.age
+        return name == other.name && nickname == other.nickname && age == other.age &&
+            veryLongAndVeryDetailedDescription == other.veryLongAndVeryDetailedDescription
       }
     
-      public override fun hashCode(): Int = Objects.hash(name, nickname, age)
+      public override fun hashCode(): Int = Objects.hash(name, nickname, age,
+          veryLongAndVeryDetailedDescription)
     
       /**
        * Composes and builds a [Person] object.
@@ -39,6 +46,7 @@ internal val expectedSimpleTestContent = """
        * @property name The full name.
        * @property nickname The nickname.
        * @property age The age.
+       * @property veryLongAndVeryDetailedDescription The very long and very detailed description.
        */
       public class Builder {
         @set:JvmSynthetic
@@ -49,6 +57,9 @@ internal val expectedSimpleTestContent = """
     
         @set:JvmSynthetic
         public var age: Int? = null
+
+        @set:JvmSynthetic
+        public var veryLongAndVeryDetailedDescription: String? = null
     
         /**
          * Set the full name.
@@ -82,6 +93,18 @@ internal val expectedSimpleTestContent = """
           this.age = age
           return this
         }
+
+        /**
+         * Set the very long and very detailed description.
+         *
+         * @param veryLongAndVeryDetailedDescription the very long and very detailed description.
+         * @return Builder
+         */
+        public fun setVeryLongAndVeryDetailedDescription(veryLongAndVeryDetailedDescription: String?):
+            Builder {
+          this.veryLongAndVeryDetailedDescription = veryLongAndVeryDetailedDescription
+          return this
+        }
     
         /**
          * Returns a [Person] reference to the object being constructed by the builder.
@@ -97,7 +120,7 @@ internal val expectedSimpleTestContent = """
           if (age==null) {
           	throw IllegalArgumentException("Null age found when building Person.")
           }
-          return Person(name!!, nickname, age!!)
+          return Person(name!!, nickname, age!!, veryLongAndVeryDetailedDescription)
         }
       }
     }
@@ -105,7 +128,7 @@ internal val expectedSimpleTestContent = """
     /**
      * Creates a [Person] through a DSL-style builder.
      *
-     * @param initializer the intialisation block
+     * @param initializer the initialisation block
      * @return Person
      */
     @JvmSynthetic
