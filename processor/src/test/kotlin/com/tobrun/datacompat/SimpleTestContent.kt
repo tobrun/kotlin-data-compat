@@ -41,8 +41,8 @@ internal val expectedSimpleTestContent = """
       /**
        * Convert to Builder allowing to change class properties.
        */
-      public fun toBuilder(): Builder = Builder() .name(name) .nickname(nickname) .age(age)
-          .veryLongAndVeryDetailedDescription(veryLongAndVeryDetailedDescription)
+      public fun toBuilder(): Builder = Builder() .setName(name) .setNickname(nickname) .setAge(age)
+          .setVeryLongAndVeryDetailedDescription(veryLongAndVeryDetailedDescription)
     
       /**
        * Composes and builds a [Person] object.
