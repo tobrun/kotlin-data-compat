@@ -37,6 +37,12 @@ internal val expectedSimpleTestContent = """
     
       public override fun hashCode(): Int = Objects.hash(name, nickname, age,
           veryLongAndVeryDetailedDescription)
+
+      /**
+       * Convert to Builder allowing to change class properties.
+       */
+      public fun toBuilder(): Builder = Builder() .name(name) .nickname(nickname) .age(age)
+          .veryLongAndVeryDetailedDescription(veryLongAndVeryDetailedDescription)
     
       /**
        * Composes and builds a [Person] object.

@@ -188,6 +188,25 @@ class DataCompatProcessor(
                         .returns(Int::class)
                         .build()
                 )
+
+                // Function toBuilder
+                addFunction(
+                    FunSpec.builder("toBuilder")
+                        .addKdoc(
+                            """
+                            Convert to Builder allowing to change class properties.
+                            """.trimIndent()
+                        )
+                        .addStatement(
+                            propertyMap.keys.joinToString(
+                                prefix = "return Builder() .",
+                                transform = { "$it($it)" },
+                                separator = " .",
+                            )
+                        )
+                        .returns(ClassName(packageName, "Builder"))
+                        .build()
+                )
             }
 
             // Builder pattern
