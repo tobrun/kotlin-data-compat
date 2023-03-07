@@ -37,6 +37,12 @@ internal val expectedSimpleTestContent = """
     
       public override fun hashCode(): Int = Objects.hash(name, nickname, age,
           veryLongAndVeryDetailedDescription)
+
+      /**
+       * Convert to Builder allowing to change class properties.
+       */
+      public fun toBuilder(): Builder = Builder() .setName(name) .setNickname(nickname) .setAge(age)
+          .setVeryLongAndVeryDetailedDescription(veryLongAndVeryDetailedDescription)
     
       /**
        * Composes and builds a [Person] object.
@@ -50,13 +56,13 @@ internal val expectedSimpleTestContent = """
        */
       public class Builder {
         @set:JvmSynthetic
-        public var name: String? = null
+        public var name: String? = "John"
     
         @set:JvmSynthetic
         public var nickname: String? = null
     
         @set:JvmSynthetic
-        public var age: Int? = null
+        public var age: Int? = 23
 
         @set:JvmSynthetic
         public var veryLongAndVeryDetailedDescription: String? = null

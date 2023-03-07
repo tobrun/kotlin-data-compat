@@ -14,6 +14,7 @@ private val simpleTest = SourceFile.kotlin(
     "PersonData.kt",
     """
 import com.tobrun.datacompat.annotation.DataCompat
+import com.tobrun.datacompat.annotation.Default
 
 interface EmptyInterface
 interface EmptyInterface2
@@ -27,8 +28,11 @@ interface EmptyInterface2
 @Deprecated
 @DataCompat
 private data class PersonData(
+    @Default("\"John\"")
     val name: String,
-    val nickname: String? = null,
+    @Default("null")
+    val nickname: String?,
+    @Default("23")
     val age: Int,
     val veryLongAndVeryDetailedDescription: String?
 ) : EmptyInterface, EmptyInterface2

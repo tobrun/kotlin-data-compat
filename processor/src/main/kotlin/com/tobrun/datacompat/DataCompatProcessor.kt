@@ -29,6 +29,7 @@ import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.writeTo
 import com.tobrun.datacompat.annotation.DataCompat
+import com.tobrun.datacompat.annotation.Default
 import java.util.Locale
 
 /**
@@ -187,18 +188,46 @@ class DataCompatProcessor(
                         .returns(Int::class)
                         .build()
                 )
+
+                // Function toBuilder
+                addFunction(
+                    FunSpec.builder("toBuilder")
+                        .addKdoc(
+                            """
+                            Convert to Builder allowing to change class properties.
+                            """.trimIndent()
+                        )
+                        .addStatement(
+                            propertyMap.keys.joinToString(
+                                prefix = "return Builder() .",
+                                transform = { str ->
+                                    "set${str.toString().replaceFirstChar {
+                                        if (it.isLowerCase())
+                                            it.titlecase(Locale.getDefault())
+                                        else it.toString()
+                                    }}($str)"
+                                },
+                                separator = " .",
+                            )
+                        )
+                        .returns(ClassName("", "Builder"))
+                        .build()
+                )
             }
 
             // Builder pattern
             val builderBuilder = TypeSpec.classBuilder("Builder")
             for (property in propertyMap) {
                 val propertyName = property.key.toString()
+                val defaultValue = property.key.annotations
+                    .firstOrNull { it.annotationType.resolve().toString() == Default::class.simpleName }
+                    ?.arguments?.first()
                 val nullableType = property.value.copy(nullable = true)
                 builderBuilder.addProperty(
                     PropertySpec.builder(propertyName, nullableType)
                         .initializer(
                             CodeBlock.builder()
-                                .add("null")
+                                .add((defaultValue?.value as? String?) ?: "null")
                                 .build()
                         )
                         .addAnnotation(

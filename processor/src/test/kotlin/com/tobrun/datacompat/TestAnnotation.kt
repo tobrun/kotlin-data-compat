@@ -10,5 +10,9 @@ package com.tobrun.datacompat.annotation
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
 annotation class DataCompat
+
+@Retention(AnnotationRetention.RUNTIME)
+@Target(AnnotationTarget.CLASS)
+annotation class Default(val valueAsString: String)
     """.trimIndent()
 )
