@@ -28,8 +28,8 @@ And you will have to include the required dependencies:
 
 ```groovy
 dependencies {
-  implementation 'com.github.tobrun.kotlin-data-compat:annotation:0.1.0'
-  ksp 'com.github.tobrun.kotlin-data-compat:processor:0.1.0'
+  implementation 'com.github.tobrun.kotlin-data-compat:annotation:0.3.0'
+  ksp 'com.github.tobrun.kotlin-data-compat:processor:0.3.0'
 }
 ```
 
@@ -39,7 +39,10 @@ dependencies {
 Given an exisiting data class:
  - add `@DataCompat` annotation
  - mark class private
- - Append `Data` to the class name
+ - append `Data` to the class name
+ - support default parameters by using `@Default` annotation
+ - retain existing class annotations (but not parameters for them)
+ - retain existing interfaces
 
 For example:
 
@@ -57,101 +60,120 @@ private data class PersonData(val name: String, val nickname: String? = null, va
 After compilation, the following class will be generated:
 
 ```kotlin
+package com.tobrun.`data`.compat.example
+
+import java.util.Objects
+import kotlin.Any
+import kotlin.Boolean
+import kotlin.Int
+import kotlin.String
+import kotlin.Unit
+import kotlin.jvm.JvmSynthetic
+
 /**
  * Represents a person.
  * @property name The full name.
  * @property nickname The nickname.
  * @property age The age.
  */
+@SampleAnnotation
 public class Person private constructor(
-  public val name: String,
-  public val nickname: String?,
-  public val age: Int
-) {
-  public override fun toString() = "Person(name=$name, nickname=$nickname, age=$age)"
+    public val name: String,
+    public val nickname: String?,
+    public val age: Int
+) : SampleInterface {
+    public override fun toString() = """Person(name=$name, nickname=$nickname,
+      age=$age)""".trimIndent()
 
-  public override fun equals(other: Any?): Boolean = other is Person
-  		&& name == other.name
-  		&& nickname == other.nickname
-  		&& age == other.age
-
-  public override fun hashCode(): Int = Objects.hash(name, nickname, age)
-
-  /**
-   * Composes and builds a [Person] object.
-   *
-   * This is a concrete implementation of the builder design pattern.
-   *
-   * @property name The full name.
-   * @property nickname The nickname.
-   * @property age The age.
-   */
-  public class Builder {
-    @set:JvmSynthetic
-    public var name: String? = null
-
-    @set:JvmSynthetic
-    public var nickname: String? = null
-
-    @set:JvmSynthetic
-    public var age: Int? = null
-
-    /**
-     * Set the full name.
-     *
-     * @param name the full name.
-     * @return Builder
-     */
-    public fun setName(name: String?): Builder {
-      this.name = name
-      return this
+    public override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        other as Person
+        return name == other.name && nickname == other.nickname && age == other.age
     }
 
-    /**
-     * Set the nickname.
-     *
-     * @param nickname the nickname.
-     * @return Builder
-     */
-    public fun setNickname(nickname: String?): Builder {
-      this.nickname = nickname
-      return this
-    }
+    public override fun hashCode(): Int = Objects.hash(name, nickname, age)
 
     /**
-     * Set the age.
-     *
-     * @param age the age.
-     * @return Builder
+     * Convert to Builder allowing to change class properties.
      */
-    public fun setAge(age: Int?): Builder {
-      this.age = age
-      return this
-    }
+    public fun toBuilder(): Builder = Builder() .setName(name) .setNickname(nickname) .setAge(age)
 
     /**
-     * Returns a [Person] reference to the object being constructed by the builder.
+     * Composes and builds a [Person] object.
      *
-     * Throws an [IllegalArgumentException] when a non-null property wasn't initialised.
+     * This is a concrete implementation of the builder design pattern.
      *
-     * @return Person
+     * @property name The full name.
+     * @property nickname The nickname.
+     * @property age The age.
      */
-    public fun build(): Person {
-      if (name==null) {
-      	throw IllegalArgumentException("Null name found when building Person.")
-      }
-      if (age==null) {
-      	throw IllegalArgumentException("Null age found when building Person.")
-      }
-      return Person(name!!, nickname, age!!)
+    public class Builder {
+        @set:JvmSynthetic
+        public var name: String? = "John"
+
+        @set:JvmSynthetic
+        public var nickname: String? = null
+
+        @set:JvmSynthetic
+        public var age: Int? = 42
+
+        /**
+         * Set the full name.
+         *
+         * @param name the full name.
+         * @return Builder
+         */
+        public fun setName(name: String?): Builder {
+            this.name = name
+            return this
+        }
+
+        /**
+         * Set the nickname.
+         *
+         * @param nickname the nickname.
+         * @return Builder
+         */
+        public fun setNickname(nickname: String?): Builder {
+            this.nickname = nickname
+            return this
+        }
+
+        /**
+         * Set the age.
+         *
+         * @param age the age.
+         * @return Builder
+         */
+        public fun setAge(age: Int?): Builder {
+            this.age = age
+            return this
+        }
+
+        /**
+         * Returns a [Person] reference to the object being constructed by the builder.
+         *
+         * Throws an [IllegalArgumentException] when a non-null property wasn't initialised.
+         *
+         * @return Person
+         */
+        public fun build(): Person {
+            if (name==null) {
+                throw IllegalArgumentException("Null name found when building Person.")
+            }
+            if (age==null) {
+                throw IllegalArgumentException("Null age found when building Person.")
+            }
+            return Person(name!!, nickname, age!!)
+        }
     }
-  }
 }
 
 /**
  * Creates a [Person] through a DSL-style builder.
  *
- * @param initializer the intialisation block
+ * @param initializer the initialisation block
  * @return Person
  */
 @JvmSynthetic

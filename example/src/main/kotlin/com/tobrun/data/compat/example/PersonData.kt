@@ -1,6 +1,10 @@
 package com.tobrun.data.compat.example
 
 import com.tobrun.datacompat.annotation.DataCompat
+import com.tobrun.datacompat.annotation.Default
+
+interface SampleInterface
+annotation class SampleAnnotation
 
 /**
  * Represents a person.
@@ -9,4 +13,11 @@ import com.tobrun.datacompat.annotation.DataCompat
  * @property age The age.
  */
 @DataCompat
-private data class PersonData(val name: String, val nickname: String? = null, val age: Int)
+@SampleAnnotation
+private data class PersonData(
+    @Default("\"John\"")
+    val name: String,
+    val nickname: String?,
+    @Default("42")
+    val age: Int
+) : SampleInterface
