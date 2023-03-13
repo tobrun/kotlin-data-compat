@@ -28,7 +28,7 @@ interface EmptyInterface2
 @Deprecated
 @DataCompat
 private data class PersonData(
-    @Default("\"John\"")
+    @Default("\"John\"", ["java.util.Date"])
     val name: String,
     @Default("null")
     val nickname: String?,

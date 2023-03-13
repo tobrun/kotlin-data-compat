@@ -28,8 +28,8 @@ And you will have to include the required dependencies:
 
 ```groovy
 dependencies {
-  implementation 'com.github.tobrun.kotlin-data-compat:annotation:0.3.0'
-  ksp 'com.github.tobrun.kotlin-data-compat:processor:0.3.0'
+  implementation 'com.github.tobrun.kotlin-data-compat:annotation:0.4.0'
+  ksp 'com.github.tobrun.kotlin-data-compat:processor:0.4.0'
 }
 ```
 
@@ -41,6 +41,7 @@ Given an exisiting data class:
  - mark class private
  - append `Data` to the class name
  - support default parameters by using `@Default` annotation
+ - support imports for default parameters
  - retain existing class annotations (but not parameters for them)
  - retain existing interfaces
 
@@ -59,7 +60,7 @@ annotation class SampleAnnotation
 @DataCompat
 @SampleAnnotation
 private data class PersonData(
-    @Default("\"John\"")
+    @Default("\"John\" + Date(1580897313933L).toString()", importList = ["java.util.Date"])
     val name: String,
     val nickname: String?,
     @Default("42")
@@ -72,6 +73,7 @@ After compilation, the following class will be generated:
 ```kotlin
 package com.tobrun.`data`.compat.example
 
+import java.util.Date
 import java.util.Objects
 import kotlin.Any
 import kotlin.Boolean
@@ -120,7 +122,7 @@ public class Person private constructor(
      */
     public class Builder {
         @set:JvmSynthetic
-        public var name: String? = "John"
+        public var name: String? = "John" + Date(1580897313933L).toString()
 
         @set:JvmSynthetic
         public var nickname: String? = null

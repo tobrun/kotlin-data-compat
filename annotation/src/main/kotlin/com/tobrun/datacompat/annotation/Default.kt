@@ -10,7 +10,13 @@ package com.tobrun.datacompat.annotation
  * @param valueAsString exact representation of the default value. E.g. if default [String] is used,
  *  it should be passed here as "\"STRING_VALUE\""; if default [Int] is used, it should be passed
  *  as "INT_VALUE".
+ *
+ * @param importList if default parameter requires additional imports, they should be passed here.
+ *  E.g. `listOf("android.graphics.Color")`
  */
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class Default(val valueAsString: String)
+annotation class Default(
+    val valueAsString: String,
+    val importList: Array<String> = []
+)

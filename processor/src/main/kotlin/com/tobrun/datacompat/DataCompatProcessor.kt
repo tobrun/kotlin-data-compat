@@ -77,6 +77,7 @@ class DataCompatProcessor(
             val implementedInterfaces = classDeclaration
                 .superTypes
                 .filter { (it.resolve().declaration as? KSClassDeclaration)?.classKind == ClassKind.INTERFACE }
+            val imports = ArrayList<String>()
 
             // Map KSP properties with KoltinPoet TypeNames
             val propertyMap = mutableMapOf<KSPropertyDeclaration, TypeName>()
@@ -219,9 +220,15 @@ class DataCompatProcessor(
             val builderBuilder = TypeSpec.classBuilder("Builder")
             for (property in propertyMap) {
                 val propertyName = property.key.toString()
-                val defaultValue = property.key.annotations
+                val defaultAnnotationsParams = property.key.annotations
                     .firstOrNull { it.annotationType.resolve().toString() == Default::class.simpleName }
-                    ?.arguments?.first()
+                    ?.arguments
+                val defaultValue = defaultAnnotationsParams?.first()
+                if ((defaultAnnotationsParams?.size ?: 0) > 1) {
+                    defaultAnnotationsParams?.get(1)?.value?.let { importList ->
+                        imports.addAll(importList as ArrayList<String>)
+                    }
+                }
                 val nullableType = property.value.copy(nullable = true)
                 builderBuilder.addProperty(
                     PropertySpec.builder(propertyName, nullableType)
@@ -349,6 +356,14 @@ class DataCompatProcessor(
                 .addImport("java.util", "Objects")
                 .addType(classBuilder.build())
                 .addFunction(initializerFunctionBuilder.build())
+
+            imports.forEach {
+                fileBuilder
+                    .addImport(
+                        it.split(".").dropLast(1).joinToString("."),
+                        it.split(".").last()
+                    )
+            }
 
             fileBuilder.build().writeTo(codeGenerator = codeGenerator, aggregating = false)
         }
