@@ -224,10 +224,8 @@ class DataCompatProcessor(
                     .firstOrNull { it.annotationType.resolve().toString() == Default::class.simpleName }
                     ?.arguments
                 val defaultValue = defaultAnnotationsParams?.first()
-                if ((defaultAnnotationsParams?.size ?: 0) > 1) {
-                    defaultAnnotationsParams?.get(1)?.value?.let { importList ->
-                        imports.addAll(importList as ArrayList<String>)
-                    }
+                defaultAnnotationsParams?.getOrNull(1)?.value?.let {
+                    imports.addAll(it as ArrayList<String>)
                 }
                 val nullableType = property.value.copy(nullable = true)
                 builderBuilder.addProperty(
