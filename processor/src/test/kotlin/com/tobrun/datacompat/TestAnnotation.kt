@@ -12,7 +12,7 @@ package com.tobrun.datacompat.annotation
 annotation class DataCompat
 
 @Retention(AnnotationRetention.RUNTIME)
-@Target(AnnotationTarget.CLASS)
-annotation class Default(val valueAsString: String)
+@Target(AnnotationTarget.VALUE_PARAMETER)
+annotation class Default(val valueAsString: String, val importList: Array<String> = [])
     """.trimIndent()
 )

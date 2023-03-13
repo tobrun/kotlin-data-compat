@@ -15,7 +15,7 @@ annotation class SampleAnnotation
 @DataCompat
 @SampleAnnotation
 private data class PersonData(
-    @Default("\"John\"")
+    @Default("\"John\" + Date(1580897313933L).toString()", imports = ["java.util.Date"])
     val name: String,
     val nickname: String?,
     @Default("42")

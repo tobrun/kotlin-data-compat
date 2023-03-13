@@ -1,6 +1,7 @@
 package com.tobrun.datacompat
 
 internal val expectedSimpleTestContent = """
+    import java.util.Date
     import java.util.Objects
     import kotlin.Any
     import kotlin.Boolean
