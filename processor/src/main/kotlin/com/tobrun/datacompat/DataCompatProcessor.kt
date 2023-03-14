@@ -10,6 +10,7 @@ import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSNode
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
+import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.KSVisitorVoid
 import com.google.devtools.ksp.symbol.Modifier
 import com.google.devtools.ksp.validate
@@ -53,12 +54,14 @@ class DataCompatProcessor(
         }
 
         val classToDefaultValuesMap =
-            mutableMapOf<KSClassDeclaration, MutableMap<KSPropertyDeclaration, String?>>()
+            mutableMapOf<KSClassDeclaration, MutableMap<String, String?>>()
         val imports = ArrayList<String>()
         val symbolsWithDefaultAnnotation =
             resolver.getSymbolsWithAnnotation(Default::class.qualifiedName!!, true)
         symbolsWithDefaultAnnotation.forEach { annotatedProperty ->
-            if (annotatedProperty is KSPropertyDeclaration) {
+            // since KSP 1.8.10-1.0.9 annotatedProperty are returned ONLY as KSValueParameter;
+            // for previous KSP versions they were also returned as KSPropertyDeclaration
+            if (annotatedProperty is KSValueParameter) {
                 val parentClass = annotatedProperty.findParentClass()!!
                 var defaultValueMap = classToDefaultValuesMap[parentClass]
                 if (defaultValueMap == null) {
@@ -66,7 +69,8 @@ class DataCompatProcessor(
                 }
                 val defaultAnnotationsParams = annotatedProperty.annotations.firstOrNull()?.arguments
                 val defaultValue = defaultAnnotationsParams?.first()
-                defaultValueMap[annotatedProperty] = defaultValue?.value as? String?
+                defaultValueMap[annotatedProperty.name!!.getShortName()] =
+                    defaultValue?.value as? String?
                 defaultAnnotationsParams?.getOrNull(1)?.value?.let {
                     imports.addAll(it as ArrayList<String>)
                 }
@@ -92,7 +96,7 @@ class DataCompatProcessor(
     }
 
     private inner class Visitor(
-        private val defaultValuesMap: Map<KSClassDeclaration, MutableMap<KSPropertyDeclaration, String?>>,
+        private val defaultValuesMap: Map<KSClassDeclaration, MutableMap<String, String?>>,
         private val imports: List<String>
     ) : KSVisitorVoid() {
 
@@ -262,7 +266,7 @@ class DataCompatProcessor(
                     PropertySpec.builder(propertyName, nullableType)
                         .initializer(
                             CodeBlock.builder()
-                                .add(defaultValuesMap[classDeclaration]?.get(property.key) ?: "null")
+                                .add(defaultValuesMap[classDeclaration]?.get(propertyName) ?: "null")
                                 .build()
                         )
                         .addAnnotation(
