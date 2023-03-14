@@ -53,6 +53,11 @@ class DataCompatProcessor(
             return emptyList()
         }
 
+        // symbols returned by
+        // resolver.getSymbolsWithAnnotation(DataCompat::class.qualifiedName!!, true)
+        // don't expose their annotations.
+        // Therefore we can't access the @Default annotation required to build the code
+        // for default values.
         val classToDefaultValuesMap =
             mutableMapOf<KSClassDeclaration, MutableMap<String, String?>>()
         val imports = ArrayList<String>()
