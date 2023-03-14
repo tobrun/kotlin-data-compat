@@ -28,8 +28,8 @@ And you will have to include the required dependencies:
 
 ```groovy
 dependencies {
-  implementation 'com.github.tobrun.kotlin-data-compat:annotation:0.4.0'
-  ksp 'com.github.tobrun.kotlin-data-compat:processor:0.4.0'
+  implementation 'com.github.tobrun.kotlin-data-compat:annotation:0.4.1'
+  ksp 'com.github.tobrun.kotlin-data-compat:processor:0.4.1'
 }
 ```
 
