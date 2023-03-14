@@ -5,7 +5,13 @@ import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessor
-import com.google.devtools.ksp.symbol.*
+import com.google.devtools.ksp.symbol.ClassKind
+import com.google.devtools.ksp.symbol.KSAnnotated
+import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSNode
+import com.google.devtools.ksp.symbol.KSPropertyDeclaration
+import com.google.devtools.ksp.symbol.KSVisitorVoid
+import com.google.devtools.ksp.symbol.Modifier
 import com.google.devtools.ksp.validate
 import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.AnnotationSpec
@@ -256,7 +262,7 @@ class DataCompatProcessor(
                     PropertySpec.builder(propertyName, nullableType)
                         .initializer(
                             CodeBlock.builder()
-                                .add(defaultValuesMap[classDeclaration]!![property.key] ?: "null")
+                                .add(defaultValuesMap[classDeclaration]?.get(property.key) ?: "null")
                                 .build()
                         )
                         .addAnnotation(
