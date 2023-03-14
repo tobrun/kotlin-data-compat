@@ -5,12 +5,7 @@ import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessor
-import com.google.devtools.ksp.symbol.ClassKind
-import com.google.devtools.ksp.symbol.KSAnnotated
-import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSPropertyDeclaration
-import com.google.devtools.ksp.symbol.KSVisitorVoid
-import com.google.devtools.ksp.symbol.Modifier
+import com.google.devtools.ksp.symbol.*
 import com.google.devtools.ksp.validate
 import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.AnnotationSpec
@@ -45,19 +40,55 @@ class DataCompatProcessor(
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
         logger.info("DataCompat: process")
-        val annotated = resolver.getSymbolsWithAnnotation(DataCompat::class.qualifiedName!!, true)
-        if (annotated.count() == 0) {
+        val dataCompatAnnotated = resolver.getSymbolsWithAnnotation(DataCompat::class.qualifiedName!!, true)
+        if (dataCompatAnnotated.count() == 0) {
             logger.info("DataCompat: No DataCompat annotations found for processing")
             return emptyList()
         }
 
-        val unableToProcess = annotated.filterNot { it.validate() }
-        annotated.filter { it is KSClassDeclaration && it.validate() }
-            .forEach { it.accept(Visitor(), Unit) }
+        val classToDefaultValuesMap =
+            mutableMapOf<KSClassDeclaration, MutableMap<KSPropertyDeclaration, String?>>()
+        val imports = ArrayList<String>()
+        val symbolsWithDefaultAnnotation =
+            resolver.getSymbolsWithAnnotation(Default::class.qualifiedName!!, true)
+        symbolsWithDefaultAnnotation.forEach { annotatedProperty ->
+            if (annotatedProperty is KSPropertyDeclaration) {
+                val parentClass = annotatedProperty.findParentClass()!!
+                var defaultValueMap = classToDefaultValuesMap[parentClass]
+                if (defaultValueMap == null) {
+                    defaultValueMap = mutableMapOf()
+                }
+                val defaultAnnotationsParams = annotatedProperty.annotations.firstOrNull()?.arguments
+                val defaultValue = defaultAnnotationsParams?.first()
+                defaultValueMap[annotatedProperty] = defaultValue?.value as? String?
+                defaultAnnotationsParams?.getOrNull(1)?.value?.let {
+                    imports.addAll(it as ArrayList<String>)
+                }
+                classToDefaultValuesMap[parentClass] = defaultValueMap
+            }
+        }
+
+        val unableToProcess = dataCompatAnnotated.filterNot { it.validate() }
+        dataCompatAnnotated.filter { it is KSClassDeclaration && it.validate() }
+            .forEach { it.accept(Visitor(classToDefaultValuesMap, imports), Unit) }
         return unableToProcess.toList()
     }
 
-    private inner class Visitor : KSVisitorVoid() {
+    private fun KSNode.findParentClass(): KSClassDeclaration? {
+        var currentParent: KSNode? = parent
+        while (currentParent !is KSClassDeclaration) {
+            currentParent = parent?.parent
+            if (currentParent == null) {
+                return null
+            }
+        }
+        return currentParent
+    }
+
+    private inner class Visitor(
+        private val defaultValuesMap: Map<KSClassDeclaration, MutableMap<KSPropertyDeclaration, String?>>,
+        private val imports: List<String>
+    ) : KSVisitorVoid() {
 
         @Suppress("LongMethod", "MaxLineLength", "ComplexMethod")
         override fun visitClassDeclaration(classDeclaration: KSClassDeclaration, data: Unit) {
@@ -77,7 +108,6 @@ class DataCompatProcessor(
             val implementedInterfaces = classDeclaration
                 .superTypes
                 .filter { (it.resolve().declaration as? KSClassDeclaration)?.classKind == ClassKind.INTERFACE }
-            val imports = ArrayList<String>()
 
             // Map KSP properties with KoltinPoet TypeNames
             val propertyMap = mutableMapOf<KSPropertyDeclaration, TypeName>()
@@ -220,19 +250,13 @@ class DataCompatProcessor(
             val builderBuilder = TypeSpec.classBuilder("Builder")
             for (property in propertyMap) {
                 val propertyName = property.key.toString()
-                val defaultAnnotationsParams = property.key.annotations
-                    .firstOrNull { it.annotationType.resolve().toString() == Default::class.simpleName }
-                    ?.arguments
-                val defaultValue = defaultAnnotationsParams?.first()
-                defaultAnnotationsParams?.getOrNull(1)?.value?.let {
-                    imports.addAll(it as ArrayList<String>)
-                }
+
                 val nullableType = property.value.copy(nullable = true)
                 builderBuilder.addProperty(
                     PropertySpec.builder(propertyName, nullableType)
                         .initializer(
                             CodeBlock.builder()
-                                .add((defaultValue?.value as? String?) ?: "null")
+                                .add(defaultValuesMap[classDeclaration]!![property.key] ?: "null")
                                 .build()
                         )
                         .addAnnotation(
