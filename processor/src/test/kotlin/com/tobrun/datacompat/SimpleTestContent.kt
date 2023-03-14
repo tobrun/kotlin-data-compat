@@ -23,7 +23,7 @@ internal val expectedSimpleTestContent = """
       public val name: String,
       public val nickname: String?,
       public val age: Int,
-      public val veryLongAndVeryDetailedDescription: String?
+      public val veryLongAndVeryDetailedDescription: String?,
     ) : EmptyInterface, EmptyInterface2 {
       public override fun toString() = ""${"\""}Person(name=%name, nickname=%nickname, age=%age,
           veryLongAndVeryDetailedDescription=%veryLongAndVeryDetailedDescription)""${"\""}.trimIndent()

@@ -1,6 +1,6 @@
 pluginManagement {
-    val kotlinVersion = "1.6.10"
-    val kspVersion = "1.6.10-1.0.2"
+    val kotlinVersion = "1.8.10"
+    val kspVersion = "1.8.10-1.0.9"
     repositories {
         gradlePluginPortal()
         google()
