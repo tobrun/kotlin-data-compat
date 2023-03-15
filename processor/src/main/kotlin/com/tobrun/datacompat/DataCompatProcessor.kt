@@ -213,7 +213,7 @@ class DataCompatProcessor(
                         propertyMap.keys.joinToString(
                             prefix = "return ",
                             separator = "·&& ",
-                            transform = { "$it·== other.$it" },
+                            transform = { "$it·==·other.$it" },
                             postfix = ""
                         )
                     )
