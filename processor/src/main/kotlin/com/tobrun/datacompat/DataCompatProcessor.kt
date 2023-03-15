@@ -330,7 +330,9 @@ class DataCompatProcessor(
                 if (!property.value.isNullable) {
                     buildFunction.addStatement("if (${property.key}==null) {")
                     val exceptionMessage = "Null ${property.key} found when building $className."
-                    buildFunction.addStatement("\tthrow IllegalArgumentException(\"\"\"$exceptionMessage\"\"\".trimIndent())")
+                    buildFunction.addStatement(
+                        "\tthrow IllegalArgumentException(\"\"\"$exceptionMessage\"\"\".trimIndent())"
+                    )
                     buildFunction.addStatement("}")
                 }
             }
