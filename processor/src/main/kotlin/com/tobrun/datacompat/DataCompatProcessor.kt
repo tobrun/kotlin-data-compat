@@ -212,8 +212,8 @@ class DataCompatProcessor(
                     .addStatement(
                         propertyMap.keys.joinToString(
                             prefix = "return ",
-                            separator = " && ",
-                            transform = { "$it == other.$it" },
+                            separator = "·&& ",
+                            transform = { "$it·==·other.$it" },
                             postfix = ""
                         )
                     )
@@ -330,7 +330,9 @@ class DataCompatProcessor(
                 if (!property.value.isNullable) {
                     buildFunction.addStatement("if (${property.key}==null) {")
                     val exceptionMessage = "Null ${property.key} found when building $className."
-                    buildFunction.addStatement("\tthrow IllegalArgumentException(\"$exceptionMessage\")")
+                    buildFunction.addStatement(
+                        "\tthrow IllegalArgumentException(\"\"\"$exceptionMessage\"\"\".trimIndent())"
+                    )
                     buildFunction.addStatement("}")
                 }
             }

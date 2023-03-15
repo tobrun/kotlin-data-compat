@@ -28,8 +28,8 @@ And you will have to include the required dependencies:
 
 ```groovy
 dependencies {
-  implementation 'com.github.tobrun.kotlin-data-compat:annotation:0.5.0'
-  ksp 'com.github.tobrun.kotlin-data-compat:processor:0.5.0'
+  implementation 'com.github.tobrun.kotlin-data-compat:annotation:0.5.1'
+  ksp 'com.github.tobrun.kotlin-data-compat:processor:0.5.1'
 }
 ```
 
@@ -172,10 +172,10 @@ public class Person private constructor(
          */
         public fun build(): Person {
             if (name==null) {
-                throw IllegalArgumentException("Null name found when building Person.")
+                throw IllegalArgumentException("""Null name found when building Person.""".trimIndent())
             }
             if (age==null) {
-                throw IllegalArgumentException("Null age found when building Person.")
+                throw IllegalArgumentException("""Null age found when building Person.""".trimIndent())
             }
             return Person(name!!, nickname, age!!)
         }
