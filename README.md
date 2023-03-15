@@ -57,7 +57,7 @@ annotation class SampleAnnotation
  * @property nickname The nickname.
  * @property age The age.
  */
-@DataCompat(imports = ["java.util.Date"])
+@DataCompat(importsForDefaults = ["java.util.Date"])
 @SampleAnnotation
 private data class PersonData(
     @Default("\"John\" + Date(1580897313933L).toString()")
