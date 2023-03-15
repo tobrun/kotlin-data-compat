@@ -48,6 +48,28 @@ Given an exisiting data class:
 For example:
 
 ```kotlin
+interface SampleInterface
+annotation class SampleAnnotation
+/**
+ * Represents a person.
+ * @property name The full name.
+ * @property nickname The nickname.
+ * @property age The age.
+ */
+@DataCompat(importsForDefaults = ["java.util.Date"])
+@SampleAnnotation
+private data class PersonData(
+    @Default("\"John\" + Date(1580897313933L).toString()")
+    val name: String,
+    val nickname: String?,
+    @Default("42")
+    val age: Int
+) : SampleInterface
+```
+
+After compilation, the following class will be generated:
+
+```kotlin
 package com.tobrun.`data`.compat.example
 
 import java.util.Date
