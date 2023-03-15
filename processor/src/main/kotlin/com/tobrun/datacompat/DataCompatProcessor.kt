@@ -60,7 +60,7 @@ class DataCompatProcessor(
         // for default values.
         val classToDefaultValuesMap =
             mutableMapOf<KSClassDeclaration, MutableMap<String, String?>>()
-        val imports = ArrayList<String>()
+
         val symbolsWithDefaultAnnotation =
             resolver.getSymbolsWithAnnotation(Default::class.qualifiedName!!, true)
         symbolsWithDefaultAnnotation.forEach { annotatedProperty ->
@@ -76,16 +76,13 @@ class DataCompatProcessor(
                 val defaultValue = defaultAnnotationsParams?.first()
                 defaultValueMap[annotatedProperty.name!!.getShortName()] =
                     defaultValue?.value as? String?
-                defaultAnnotationsParams?.getOrNull(1)?.value?.let {
-                    imports.addAll(it as ArrayList<String>)
-                }
                 classToDefaultValuesMap[parentClass] = defaultValueMap
             }
         }
 
         val unableToProcess = dataCompatAnnotated.filterNot { it.validate() }
         dataCompatAnnotated.filter { it is KSClassDeclaration && it.validate() }
-            .forEach { it.accept(Visitor(classToDefaultValuesMap, imports), Unit) }
+            .forEach { it.accept(Visitor(classToDefaultValuesMap), Unit) }
         return unableToProcess.toList()
     }
 
@@ -102,7 +99,6 @@ class DataCompatProcessor(
 
     private inner class Visitor(
         private val defaultValuesMap: Map<KSClassDeclaration, MutableMap<String, String?>>,
-        private val imports: List<String>
     ) : KSVisitorVoid() {
 
         @Suppress("LongMethod", "MaxLineLength", "ComplexMethod")
@@ -118,6 +114,10 @@ class DataCompatProcessor(
             val classKdoc = classDeclaration.docString
             val packageName = classDeclaration.packageName.asString()
 
+            val imports = ArrayList<String>()
+            classDeclaration.annotations.firstOrNull {
+                it.annotationType.resolve().toString() == DataCompat::class.simpleName
+            }?.arguments?.firstOrNull()?.value?.let { imports.addAll(it as ArrayList<String>) }
             val otherAnnotations = classDeclaration.annotations
                 .filter { it.annotationType.resolve().toString() != DataCompat::class.simpleName }
             val implementedInterfaces = classDeclaration

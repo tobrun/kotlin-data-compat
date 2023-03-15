@@ -9,10 +9,10 @@ package com.tobrun.datacompat.annotation
 
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
-annotation class DataCompat
+annotation class DataCompat(val imports: Array<String> = [])
 
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class Default(val valueAsString: String, val importList: Array<String> = [])
+annotation class Default(val valueAsString: String)
     """.trimIndent()
 )
