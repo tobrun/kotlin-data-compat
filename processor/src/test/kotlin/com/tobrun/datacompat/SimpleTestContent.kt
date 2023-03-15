@@ -122,10 +122,10 @@ internal val expectedSimpleTestContent = """
          */
         public fun build(): Person {
           if (name==null) {
-          	throw IllegalArgumentException("Null name found when building Person.")
+          	throw IllegalArgumentException(""${"\""}Null name found when building Person.""${"\""}.trimIndent())
           }
           if (age==null) {
-          	throw IllegalArgumentException("Null age found when building Person.")
+          	throw IllegalArgumentException(""${"\""}Null age found when building Person.""${"\""}.trimIndent())
           }
           return Person(name!!, nickname, age!!, veryLongAndVeryDetailedDescription)
         }
