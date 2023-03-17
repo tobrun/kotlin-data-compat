@@ -184,8 +184,13 @@ class DataCompatProcessor(
                         PropertySpec.builder(entry.key.toString(), entry.value)
                             .addKdoc(
                                 """
-                            |Represents ${getKDocProperty(kdocPropertyList, entry.key.toString())}
-                            """.trimMargin()
+                                |${getKDocProperty(kdocPropertyList, entry.key.toString()).replaceFirstChar {
+                                    if (it.isLowerCase()) it.titlecase(
+                                        Locale.getDefault()
+                                    ) else it.toString()
+                                }}
+                                |${entry.key.docString?.trimStart(' ', '\n') ?: ""}
+                                """.trimMargin()
                             )
                             .initializer(entry.key.toString())
                             .build()
@@ -217,8 +222,8 @@ class DataCompatProcessor(
                     .addModifiers(KModifier.OVERRIDE)
                     .addKdoc(
                         """
-                            Overloaded equals function.
-                            """.trimIndent()
+                        Overloaded equals function.
+                        """.trimIndent()
                     )
                     .addParameter("other", ANY.copy(nullable = true))
                     .addStatement("if (this === other) return true")
@@ -296,7 +301,12 @@ class DataCompatProcessor(
                         )
                         .addKdoc(
                             """
-                            |Represents $kDocProperty
+                            |${kDocProperty.replaceFirstChar {
+                                if (it.isLowerCase()) it.titlecase(
+                                    Locale.getDefault()
+                                ) else it.toString()
+                            }}
+                            |${property.key.docString?.trimStart(' ', '\n') ?: ""}
                             """.trimMargin()
                         )
                         .addAnnotation(
@@ -318,7 +328,7 @@ class DataCompatProcessor(
                         .addKdoc(
                             """
                             |Set $kDocProperty
-                            |
+                            |${property.key.docString?.trimStart(' ', '\n') ?: ""}
                             |@param $propertyName $kDocProperty
                             |@return Builder
                             """.trimMargin()

@@ -34,6 +34,9 @@ private data class PersonData(
     val nickname: String?,
     @Default("23")
     val age: Int,
+    /**
+     * Actually it's a very short description.
+    */
     val veryLongAndVeryDetailedDescription: String?
 ) : EmptyInterface, EmptyInterface2
     """.trimIndent()

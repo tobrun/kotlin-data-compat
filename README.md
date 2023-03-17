@@ -28,8 +28,8 @@ And you will have to include the required dependencies:
 
 ```groovy
 dependencies {
-  implementation 'com.github.tobrun.kotlin-data-compat:annotation:0.5.1'
-  ksp 'com.github.tobrun.kotlin-data-compat:processor:0.5.1'
+  implementation 'com.github.tobrun.kotlin-data-compat:annotation:0.5.2'
+  ksp 'com.github.tobrun.kotlin-data-compat:processor:0.5.2'
 }
 ```
 
@@ -62,6 +62,9 @@ annotation class SampleAnnotation
 private data class PersonData(
     @Default("\"John\" + Date(1580897313933L).toString()")
     val name: String,
+    /**
+     * Additional comment.
+     */
     val nickname: String?,
     @Default("42")
     val age: Int
@@ -90,13 +93,29 @@ import kotlin.jvm.JvmSynthetic
  */
 @SampleAnnotation
 public class Person private constructor(
+    /**
+     * The full name.
+     */
     public val name: String,
+    /**
+     * The nickname.
+     * Additional comment.
+     */
     public val nickname: String?,
+    /**
+     * The age.
+     */
     public val age: Int
 ) : SampleInterface {
+    /**
+     * Overloaded toString function.
+     */
     public override fun toString() = """Person(name=$name, nickname=$nickname,
       age=$age)""".trimIndent()
 
+    /**
+     * Overloaded equals function.
+     */
     public override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -104,6 +123,9 @@ public class Person private constructor(
         return name == other.name && nickname == other.nickname && age == other.age
     }
 
+    /**
+     * Overloaded hashCode function based on all class properties.
+     */
     public override fun hashCode(): Int = Objects.hash(name, nickname, age)
 
     /**
@@ -121,12 +143,22 @@ public class Person private constructor(
      * @property age The age.
      */
     public class Builder {
+        /**
+         * The full name.
+         */
         @set:JvmSynthetic
         public var name: String? = "John" + Date(1580897313933L).toString()
 
+        /**
+         * The nickname.
+         * Additional comment.
+         */
         @set:JvmSynthetic
         public var nickname: String? = null
 
+        /**
+         * The age.
+         */
         @set:JvmSynthetic
         public var age: Int? = 42
 
@@ -143,6 +175,7 @@ public class Person private constructor(
 
         /**
          * Set the nickname.
+         * Additional comment.
          *
          * @param nickname the nickname.
          * @return Builder
