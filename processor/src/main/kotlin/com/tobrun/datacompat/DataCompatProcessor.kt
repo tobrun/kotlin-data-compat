@@ -182,6 +182,16 @@ class DataCompatProcessor(
                 for (entry in propertyMap) {
                     addProperty(
                         PropertySpec.builder(entry.key.toString(), entry.value)
+                            .addKdoc(
+                                """
+                                |${getKDocProperty(kdocPropertyList, entry.key.toString()).replaceFirstChar {
+                                    if (it.isLowerCase()) it.titlecase(
+                                        Locale.getDefault()
+                                    ) else it.toString()
+                                }}
+                                |${entry.key.docString?.trimStart(' ', '\n') ?: ""}
+                                """.trimMargin()
+                            )
                             .initializer(entry.key.toString())
                             .build()
                     )
@@ -191,6 +201,11 @@ class DataCompatProcessor(
                 addFunction(
                     FunSpec.builder("toString")
                         .addModifiers(KModifier.OVERRIDE)
+                        .addKdoc(
+                            """
+                            Overloaded toString function.
+                            """.trimIndent()
+                        )
                         // using triple quote for long strings
                         .addStatement(
                             propertyMap.keys.joinToString(
@@ -205,6 +220,11 @@ class DataCompatProcessor(
                 // Function equals
                 val equalsBuilder = FunSpec.builder("equals")
                     .addModifiers(KModifier.OVERRIDE)
+                    .addKdoc(
+                        """
+                        Overloaded equals function.
+                        """.trimIndent()
+                    )
                     .addParameter("other", ANY.copy(nullable = true))
                     .addStatement("if (this === other) return true")
                     .addStatement("if (javaClass != other?.javaClass) return false")
@@ -223,6 +243,11 @@ class DataCompatProcessor(
                 // Function hashCode
                 addFunction(
                     FunSpec.builder("hashCode")
+                        .addKdoc(
+                            """
+                            Overloaded hashCode function based on all class properties.
+                            """.trimIndent()
+                        )
                         .addModifiers(KModifier.OVERRIDE)
                         .addStatement(
                             propertyMap.keys.joinToString(
@@ -265,14 +290,24 @@ class DataCompatProcessor(
             val builderBuilder = TypeSpec.classBuilder("Builder")
             for (property in propertyMap) {
                 val propertyName = property.key.toString()
-
                 val nullableType = property.value.copy(nullable = true)
+                val kDocProperty = getKDocProperty(kdocPropertyList, propertyName)
                 builderBuilder.addProperty(
                     PropertySpec.builder(propertyName, nullableType)
                         .initializer(
                             CodeBlock.builder()
                                 .add(defaultValuesMap[classDeclaration]?.get(propertyName) ?: "null")
                                 .build()
+                        )
+                        .addKdoc(
+                            """
+                            |${kDocProperty.replaceFirstChar {
+                                if (it.isLowerCase()) it.titlecase(
+                                    Locale.getDefault()
+                                ) else it.toString()
+                            }}
+                            |${property.key.docString?.trimStart(' ', '\n') ?: ""}
+                            """.trimMargin()
                         )
                         .addAnnotation(
                             AnnotationSpec.builder(JvmSynthetic::class)
@@ -282,16 +317,6 @@ class DataCompatProcessor(
                         .mutable()
                         .build()
                 )
-
-                var kDocProperty = kdocPropertyList
-                    .filter { it.startsWith("$propertyName ") }
-                    .joinToString {
-                        it.substringAfter("$propertyName ").lowercase(Locale.getDefault())
-                    }
-
-                if (kDocProperty.isEmpty()) {
-                    kDocProperty = propertyName
-                }
 
                 builderBuilder.addFunction(
                     FunSpec
@@ -303,7 +328,7 @@ class DataCompatProcessor(
                         .addKdoc(
                             """
                             |Set $kDocProperty
-                            |
+                            |${property.key.docString?.trimStart(' ', '\n') ?: ""}
                             |@param $propertyName $kDocProperty
                             |@return Builder
                             """.trimMargin()
@@ -356,7 +381,7 @@ class DataCompatProcessor(
                 |
                 |${
                 kdocPropertyList.joinToString(
-                    prefix = "$KDOC_PROPERTY_ANNOTATION ",
+                    prefix = if (kdocPropertyList.isEmpty()) "" else "$KDOC_PROPERTY_ANNOTATION ",
                     separator = "\n$KDOC_PROPERTY_ANNOTATION "
                 )
                 }
@@ -453,6 +478,19 @@ class DataCompatProcessor(
     }
 
     private fun KSClassDeclaration.isDataClass() = modifiers.contains(Modifier.DATA)
+
+    private fun getKDocProperty(kdocPropertyList: List<String>, propertyName: String): String {
+        var kDocProperty = kdocPropertyList
+            .filter { it.startsWith("$propertyName ") }
+            .joinToString {
+                it.substringAfter("$propertyName ").lowercase(Locale.getDefault())
+            }
+
+        if (kDocProperty.isEmpty()) {
+            kDocProperty = propertyName
+        }
+        return kDocProperty
+    }
 
     private companion object {
         private const val CLASS_NAME_DROP_LAST_CHARACTERS = 4
