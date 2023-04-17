@@ -27,4 +27,8 @@ private data class PersonData(
     val euroAmount: Float,
     @Default("300.0")
     val dollarAmount: Double?,
+    /**
+     * Mandatory extra info.
+     */
+    val extraInfo: String,
 ) : SampleInterface
