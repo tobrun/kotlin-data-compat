@@ -26,6 +26,7 @@ import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.asTypeName
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
@@ -233,7 +234,24 @@ class DataCompatProcessor(
                         propertyMap.keys.joinToString(
                             prefix = "return ",
                             separator = "·&& ",
-                            transform = { "$it·==·other.$it" },
+                            transform = {
+                                val resolvedType = it.type.resolve()
+                                val isFloat =
+                                    resolvedType.toClassName() == Float::class.asTypeName()
+                                val isDouble =
+                                    resolvedType.toClassName() == Double::class.asTypeName()
+                                if (isFloat || isDouble) {
+                                    if (resolvedType.isMarkedNullable && isDouble) {
+                                        "($it·?:·0.0).compareTo(other.$it·?:·0.0)·==·0"
+                                    } else if (resolvedType.isMarkedNullable && isFloat) {
+                                        "($it·?:·0f).compareTo(other.$it·?:·0f)·==·0"
+                                    } else {
+                                        "$it.compareTo(other.$it)·==·0"
+                                    }
+                                } else {
+                                    "$it·==·other.$it"
+                                }
+                            },
                             postfix = ""
                         )
                     )
