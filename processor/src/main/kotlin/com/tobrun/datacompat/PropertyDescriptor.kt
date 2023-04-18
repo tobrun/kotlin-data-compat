@@ -6,5 +6,4 @@ data class PropertyDescriptor(
     val typeName: TypeName,
     val mandatoryForConstructor: Boolean,
     val kDoc: String,
-    val hasActualKDoc: Boolean,
 )

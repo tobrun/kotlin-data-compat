@@ -133,8 +133,7 @@ class DataCompatProcessor(
                     typeName = typeName,
                     mandatoryForConstructor = defaultValuesMap[classDeclaration]
                         ?.get(property.toString()) == null && !typeName.isNullable,
-                    kDoc = property.docString?.trimStart(' ', '\n') ?: property.toString().kDocFormat(),
-                    hasActualKDoc = property.docString != null
+                    kDoc = property.docString?.trim(' ', '\n') ?: property.toString().capitalizeAndAddSpaces(),
                 )
             }
 
@@ -365,7 +364,7 @@ class DataCompatProcessor(
                         .addKdoc(
                             """
                             |Set ${property.value.kDoc.trimEnd('.').lowercase()}.
-                            |${if (property.value.hasActualKDoc) property.value.kDoc else ""}
+                            |
                             |@param $propertyName
                             |@return Builder
                             """.trimMargin()
@@ -385,8 +384,6 @@ class DataCompatProcessor(
             buildFunction.addKdoc(
                 """
                 |Returns a [$className] reference to the object being constructed by the builder.
-                |
-                |Throws an [IllegalArgumentException] when a non-null property wasn't initialised.
                 |
                 |@return $className
                 """.trimMargin()
@@ -448,6 +445,7 @@ class DataCompatProcessor(
             // File
             val fileBuilder = FileSpec.builder(packageName, className)
                 .addImport("java.util", "Objects")
+                .suppressWarningTypes("RedundantVisibilityModifier")
                 .addType(classBuilder.build())
                 .addFunction(initializerFunctionBuilder.build())
 
@@ -460,6 +458,21 @@ class DataCompatProcessor(
             }
 
             fileBuilder.build().writeTo(codeGenerator = codeGenerator, aggregating = false)
+        }
+
+        @Suppress("SameParameterValue")
+        private fun FileSpec.Builder.suppressWarningTypes(vararg types: String): FileSpec.Builder {
+            if (types.isEmpty()) {
+                return this
+            }
+
+            val format = "%S,".repeat(types.count()).trimEnd(',')
+            addAnnotation(
+                AnnotationSpec.builder(ClassName("", "Suppress"))
+                    .addMember(format, *types)
+                    .build()
+            )
+            return this
         }
 
         @Suppress("ReturnCount")
@@ -509,10 +522,7 @@ class DataCompatProcessor(
 
     private fun KSClassDeclaration.isDataClass() = modifiers.contains(Modifier.DATA)
 
-    /**
-     * Capitalize and add spaces.
-     */
-    private fun String.kDocFormat(): String {
+    private fun String.capitalizeAndAddSpaces(): String {
         val tmpStr = replace(Regex("[A-Z]")) { " " + it.value.lowercase(Locale.getDefault()) }
         return tmpStr.replaceFirstChar {
             if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
