@@ -28,7 +28,7 @@ private data class PersonData(
     @Default("300.0")
     val dollarAmount: Double?,
     /**
-     * Mandatory extra info.
+     * Extra info. Mandatory property.
      */
     val extraInfo: String,
 ) : SampleInterface
