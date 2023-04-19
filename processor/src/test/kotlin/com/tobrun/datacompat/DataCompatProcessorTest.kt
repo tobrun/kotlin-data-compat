@@ -37,7 +37,11 @@ private data class PersonData(
     /**
      * Actually it's a very short description.
     */
-    val veryLongAndVeryDetailedDescription: String?
+    val veryLongAndVeryDetailedDescription: String?,
+    /**
+     * Parameter that will become constructor parameter.
+    */
+    val mandatoryDoubleWithoutDefault: Double,
 ) : EmptyInterface, EmptyInterface2
     """.trimIndent()
 )

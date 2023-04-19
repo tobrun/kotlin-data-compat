@@ -231,21 +231,22 @@ class DataCompatProcessor(
                             prefix = "return ",
                             separator = "·&& ",
                             transform = {
-                                val resolvedType = it.type.resolve()
-                                val isFloat =
-                                    resolvedType.toClassName() == Float::class.asTypeName()
-                                val isDouble =
-                                    resolvedType.toClassName() == Double::class.asTypeName()
-                                if (isFloat || isDouble) {
-                                    if (resolvedType.isMarkedNullable && isDouble) {
-                                        "($it·?:·0.0).compareTo(other.$it·?:·0.0)·==·0"
-                                    } else if (resolvedType.isMarkedNullable && isFloat) {
-                                        "($it·?:·0f).compareTo(other.$it·?:·0f)·==·0"
+                                with(it.type.resolve()) {
+                                    val isFloat =
+                                        toClassName() == Float::class.asTypeName()
+                                    val isDouble =
+                                        toClassName() == Double::class.asTypeName()
+                                    if (isFloat || isDouble) {
+                                        if (isMarkedNullable && isDouble) {
+                                            "($it·?:·0.0).compareTo(other.$it·?:·0.0)·==·0"
+                                        } else if (isMarkedNullable && isFloat) {
+                                            "($it·?:·0f).compareTo(other.$it·?:·0f)·==·0"
+                                        } else {
+                                            "$it.compareTo(other.$it)·==·0"
+                                        }
                                     } else {
-                                        "$it.compareTo(other.$it)·==·0"
+                                        "$it·==·other.$it"
                                     }
-                                } else {
-                                    "$it·==·other.$it"
                                 }
                             },
                             postfix = ""
@@ -432,16 +433,15 @@ class DataCompatProcessor(
             }
 
             initializerFunctionBuilder.addParameter(
-                    ParameterSpec.builder(
-                        "initializer",
-                        LambdaTypeName.get(
-                            ClassName(packageName, className, "Builder"),
-                            emptyList(),
-                            ClassName("kotlin", "Unit")
-                        )
-                    ).build()
-                )
-                .addStatement("return $className.Builder($mandatoryParams).apply(initializer).build()")
+                ParameterSpec.builder(
+                    "initializer",
+                    LambdaTypeName.get(
+                        ClassName(packageName, className, "Builder"),
+                        emptyList(),
+                        ClassName("kotlin", "Unit")
+                    )
+                ).build()
+            ).addStatement("return $className.Builder($mandatoryParams).apply(initializer).build()")
 
             // File
             val fileBuilder = FileSpec.builder(packageName, className)

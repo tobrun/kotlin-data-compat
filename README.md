@@ -28,8 +28,8 @@ And you will have to include the required dependencies:
 
 ```groovy
 dependencies {
-  implementation 'com.github.tobrun.kotlin-data-compat:annotation:0.5.2'
-  ksp 'com.github.tobrun.kotlin-data-compat:processor:0.5.2'
+  implementation 'com.github.tobrun.kotlin-data-compat:annotation:0.6.0'
+  ksp 'com.github.tobrun.kotlin-data-compat:processor:0.6.0'
 }
 ```
 
@@ -44,10 +44,14 @@ Given an exisiting data class:
  - support imports for default parameters
  - retain existing class annotations (but not parameters for them)
  - retain existing interfaces
+ - make non-nullable parameters without defaults mandatory Builder constructor parameters
 
 For example:
 
 ```kotlin
+import com.tobrun.datacompat.annotation.DataCompat
+import com.tobrun.datacompat.annotation.Default
+
 interface SampleInterface
 annotation class SampleAnnotation
 
@@ -67,19 +71,31 @@ private data class PersonData(
      */
     val nickname: String?,
     @Default("42")
-    val age: Int
+    val age: Int,
+    @Default("50.2f")
+    val euroAmount: Float,
+    @Default("300.0")
+    val dollarAmount: Double?,
+    /**
+     * Extra info. Mandatory property.
+     */
+    val extraInfo: String,
 ) : SampleInterface
 ```
 
 After compilation, the following class will be generated:
 
 ```kotlin
+@file:Suppress("RedundantVisibilityModifier")
+
 package com.tobrun.`data`.compat.example
 
 import java.util.Date
 import java.util.Objects
 import kotlin.Any
 import kotlin.Boolean
+import kotlin.Double
+import kotlin.Float
 import kotlin.Int
 import kotlin.String
 import kotlin.Unit
@@ -94,24 +110,35 @@ import kotlin.jvm.JvmSynthetic
 @SampleAnnotation
 public class Person private constructor(
     /**
-     * The full name.
+     * Name.
      */
     public val name: String,
     /**
-     * The nickname.
      * Additional comment.
      */
     public val nickname: String?,
     /**
-     * The age.
+     * Age.
      */
-    public val age: Int
+    public val age: Int,
+    /**
+     * Euro amount.
+     */
+    public val euroAmount: Float,
+    /**
+     * Dollar amount.
+     */
+    public val dollarAmount: Double?,
+    /**
+     * Extra info. Mandatory property.
+     */
+    public val extraInfo: String
 ) : SampleInterface {
     /**
      * Overloaded toString function.
      */
-    public override fun toString() = """Person(name=$name, nickname=$nickname,
-      age=$age)""".trimIndent()
+    public override fun toString() = """Person(name=$name, nickname=$nickname, age=$age,
+      euroAmount=$euroAmount, dollarAmount=$dollarAmount, extraInfo=$extraInfo)""".trimIndent()
 
     /**
      * Overloaded equals function.
@@ -120,64 +147,82 @@ public class Person private constructor(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
         other as Person
-        return name == other.name && nickname == other.nickname && age == other.age
+        return name == other.name && nickname == other.nickname && age == other.age &&
+                euroAmount.compareTo(other.euroAmount) == 0 &&
+                (dollarAmount ?: 0.0).compareTo(other.dollarAmount ?: 0.0) == 0 &&
+                extraInfo == other.extraInfo
     }
 
     /**
      * Overloaded hashCode function based on all class properties.
      */
-    public override fun hashCode(): Int = Objects.hash(name, nickname, age)
+    public override fun hashCode(): Int = Objects.hash(name, nickname, age, euroAmount, dollarAmount,
+        extraInfo)
 
     /**
      * Convert to Builder allowing to change class properties.
      */
-    public fun toBuilder(): Builder = Builder() .setName(name) .setNickname(nickname) .setAge(age)
+    public fun toBuilder(): Builder = Builder(extraInfo) .setName(name) .setNickname(nickname)
+        .setAge(age) .setEuroAmount(euroAmount) .setDollarAmount(dollarAmount)
+        .setExtraInfo(extraInfo)
 
     /**
      * Composes and builds a [Person] object.
      *
      * This is a concrete implementation of the builder design pattern.
-     *
-     * @property name The full name.
-     * @property nickname The nickname.
-     * @property age The age.
      */
-    public class Builder {
+    public class Builder(
         /**
-         * The full name.
+         * Extra info. Mandatory property.
          */
         @set:JvmSynthetic
-        public var name: String? = "John" + Date(1580897313933L).toString()
+        public var extraInfo: String
+    ) {
+        /**
+         * Name.
+         */
+        @set:JvmSynthetic
+        public var name: String = "John" + Date(1580897313933L).toString()
 
         /**
-         * The nickname.
          * Additional comment.
          */
         @set:JvmSynthetic
         public var nickname: String? = null
 
         /**
-         * The age.
+         * Age.
          */
         @set:JvmSynthetic
-        public var age: Int? = 42
+        public var age: Int = 42
 
         /**
-         * Set the full name.
+         * Euro amount.
+         */
+        @set:JvmSynthetic
+        public var euroAmount: Float = 50.2f
+
+        /**
+         * Dollar amount.
+         */
+        @set:JvmSynthetic
+        public var dollarAmount: Double? = 300.0
+
+        /**
+         * Setter for name: name.
          *
-         * @param name the full name.
+         * @param name
          * @return Builder
          */
-        public fun setName(name: String?): Builder {
+        public fun setName(name: String): Builder {
             this.name = name
             return this
         }
 
         /**
-         * Set the nickname.
-         * Additional comment.
+         * Setter for nickname: additional comment.
          *
-         * @param nickname the nickname.
+         * @param nickname
          * @return Builder
          */
         public fun setNickname(nickname: String?): Builder {
@@ -186,32 +231,55 @@ public class Person private constructor(
         }
 
         /**
-         * Set the age.
+         * Setter for age: age.
          *
-         * @param age the age.
+         * @param age
          * @return Builder
          */
-        public fun setAge(age: Int?): Builder {
+        public fun setAge(age: Int): Builder {
             this.age = age
+            return this
+        }
+
+        /**
+         * Setter for euroAmount: euro amount.
+         *
+         * @param euroAmount
+         * @return Builder
+         */
+        public fun setEuroAmount(euroAmount: Float): Builder {
+            this.euroAmount = euroAmount
+            return this
+        }
+
+        /**
+         * Setter for dollarAmount: dollar amount.
+         *
+         * @param dollarAmount
+         * @return Builder
+         */
+        public fun setDollarAmount(dollarAmount: Double?): Builder {
+            this.dollarAmount = dollarAmount
+            return this
+        }
+
+        /**
+         * Setter for extraInfo: extra info. Mandatory property.
+         *
+         * @param extraInfo
+         * @return Builder
+         */
+        public fun setExtraInfo(extraInfo: String): Builder {
+            this.extraInfo = extraInfo
             return this
         }
 
         /**
          * Returns a [Person] reference to the object being constructed by the builder.
          *
-         * Throws an [IllegalArgumentException] when a non-null property wasn't initialised.
-         *
          * @return Person
          */
-        public fun build(): Person {
-            if (name==null) {
-                throw IllegalArgumentException("""Null name found when building Person.""".trimIndent())
-            }
-            if (age==null) {
-                throw IllegalArgumentException("""Null age found when building Person.""".trimIndent())
-            }
-            return Person(name!!, nickname, age!!)
-        }
+        public fun build(): Person = Person(name, nickname, age, euroAmount, dollarAmount, extraInfo)
     }
 }
 
@@ -222,6 +290,6 @@ public class Person private constructor(
  * @return Person
  */
 @JvmSynthetic
-public fun Person(initializer: Person.Builder.() -> Unit): Person =
-    Person.Builder().apply(initializer).build()
+public fun Person(extraInfo: String, initializer: Person.Builder.() -> Unit): Person =
+    Person.Builder(extraInfo).apply(initializer).build()
 ```
