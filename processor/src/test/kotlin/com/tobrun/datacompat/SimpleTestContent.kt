@@ -1,11 +1,14 @@
 package com.tobrun.datacompat
 
 internal val expectedSimpleTestContent = """
+@file:Suppress("RedundantVisibilityModifier")
+
 import java.util.Date
 import java.util.Objects
 import kotlin.Any
 import kotlin.Boolean
 import kotlin.Deprecated
+import kotlin.Double
 import kotlin.Int
 import kotlin.String
 import kotlin.Unit
@@ -21,28 +24,32 @@ import kotlin.jvm.JvmSynthetic
 @Deprecated
 public class Person private constructor(
   /**
-   * The full name.
+   * Name.
    */
   public val name: String,
   /**
-   * The nickname.
+   * Nickname.
    */
   public val nickname: String?,
   /**
-   * The age.
+   * Age.
    */
   public val age: Int,
   /**
-   * The very long and very detailed description.
    * Actually it's a very short description.
    */
-  public val veryLongAndVeryDetailedDescription: String?
+  public val veryLongAndVeryDetailedDescription: String?,
+  /**
+   * Parameter that will become constructor parameter.
+   */
+  public val mandatoryDoubleWithoutDefault: Double
 ) : EmptyInterface, EmptyInterface2 {
   /**
    * Overloaded toString function.
    */
   public override fun toString() = ""${"\""}Person(name=%name, nickname=%nickname, age=%age,
-      veryLongAndVeryDetailedDescription=%veryLongAndVeryDetailedDescription)""${"\""}.trimIndent()
+      veryLongAndVeryDetailedDescription=%veryLongAndVeryDetailedDescription,
+      mandatoryDoubleWithoutDefault=%mandatoryDoubleWithoutDefault)""${"\""}.trimIndent()
 
   /**
    * Overloaded equals function.
@@ -52,72 +59,75 @@ public class Person private constructor(
     if (javaClass != other?.javaClass) return false
     other as Person
     return name == other.name && nickname == other.nickname && age == other.age &&
-        veryLongAndVeryDetailedDescription == other.veryLongAndVeryDetailedDescription
+        veryLongAndVeryDetailedDescription == other.veryLongAndVeryDetailedDescription &&
+        mandatoryDoubleWithoutDefault.compareTo(other.mandatoryDoubleWithoutDefault) == 0
   }
 
   /**
    * Overloaded hashCode function based on all class properties.
    */
   public override fun hashCode(): Int = Objects.hash(name, nickname, age,
-      veryLongAndVeryDetailedDescription)
+      veryLongAndVeryDetailedDescription, mandatoryDoubleWithoutDefault)
 
   /**
    * Convert to Builder allowing to change class properties.
    */
-  public fun toBuilder(): Builder = Builder() .setName(name) .setNickname(nickname) .setAge(age)
+  public fun toBuilder(): Builder = Builder(mandatoryDoubleWithoutDefault) .setName(name)
+      .setNickname(nickname) .setAge(age)
       .setVeryLongAndVeryDetailedDescription(veryLongAndVeryDetailedDescription)
+      .setMandatoryDoubleWithoutDefault(mandatoryDoubleWithoutDefault)
 
   /**
    * Composes and builds a [Person] object.
    *
    * This is a concrete implementation of the builder design pattern.
-   *
-   * @property name The full name.
-   * @property nickname The nickname.
-   * @property age The age.
-   * @property veryLongAndVeryDetailedDescription The very long and very detailed description.
    */
-  public class Builder {
+  public class Builder(
     /**
-     * The full name.
+     * Parameter that will become constructor parameter.
      */
     @set:JvmSynthetic
-    public var name: String? = "John"
+    public var mandatoryDoubleWithoutDefault: Double
+  ) {
+    /**
+     * Name.
+     */
+    @set:JvmSynthetic
+    public var name: String = "John"
 
     /**
-     * The nickname.
+     * Nickname.
      */
     @set:JvmSynthetic
     public var nickname: String? = null
 
     /**
-     * The age.
+     * Age.
      */
     @set:JvmSynthetic
-    public var age: Int? = 23
+    public var age: Int = 23
 
     /**
-     * The very long and very detailed description.
      * Actually it's a very short description.
      */
     @set:JvmSynthetic
     public var veryLongAndVeryDetailedDescription: String? = null
 
     /**
-     * Set the full name.
+     * Setter for name: name.
      *
-     * @param name the full name.
+     * @param name
      * @return Builder
      */
-    public fun setName(name: String?): Builder {
+    public fun setName(name: String): Builder {
       this.name = name
       return this
     }
 
     /**
-     * Set the nickname.
+     * Setter for nickname: nickname.
      *
-     * @param nickname the nickname.
+     * @param nickname
      * @return Builder
      */
     public fun setNickname(nickname: String?): Builder {
@@ -126,21 +136,20 @@ public class Person private constructor(
     }
 
     /**
-     * Set the age.
+     * Setter for age: age.
      *
-     * @param age the age.
+     * @param age
      * @return Builder
      */
-    public fun setAge(age: Int?): Builder {
+    public fun setAge(age: Int): Builder {
       this.age = age
       return this
     }
 
     /**
-     * Set the very long and very detailed description.
-     * Actually it's a very short description.
+     * Setter for veryLongAndVeryDetailedDescription: actually it's a very short description.
      *
-     * @param veryLongAndVeryDetailedDescription the very long and very detailed description.
+     * @param veryLongAndVeryDetailedDescription
      * @return Builder
      */
     public fun setVeryLongAndVeryDetailedDescription(veryLongAndVeryDetailedDescription: String?):
@@ -150,21 +159,23 @@ public class Person private constructor(
     }
 
     /**
-     * Returns a [Person] reference to the object being constructed by the builder.
+     * Setter for mandatoryDoubleWithoutDefault: parameter that will become constructor parameter.
      *
-     * Throws an [IllegalArgumentException] when a non-null property wasn't initialised.
+     * @param mandatoryDoubleWithoutDefault
+     * @return Builder
+     */
+    public fun setMandatoryDoubleWithoutDefault(mandatoryDoubleWithoutDefault: Double): Builder {
+      this.mandatoryDoubleWithoutDefault = mandatoryDoubleWithoutDefault
+      return this
+    }
+
+    /**
+     * Returns a [Person] reference to the object being constructed by the builder.
      *
      * @return Person
      */
-    public fun build(): Person {
-      if (name==null) {
-      	throw IllegalArgumentException(""${"\""}Null name found when building Person.""${"\""}.trimIndent())
-      }
-      if (age==null) {
-      	throw IllegalArgumentException(""${"\""}Null age found when building Person.""${"\""}.trimIndent())
-      }
-      return Person(name!!, nickname, age!!, veryLongAndVeryDetailedDescription)
-    }
+    public fun build(): Person = Person(name, nickname, age, veryLongAndVeryDetailedDescription,
+        mandatoryDoubleWithoutDefault)
   }
 }
 
@@ -175,7 +186,7 @@ public class Person private constructor(
  * @return Person
  */
 @JvmSynthetic
-public fun Person(initializer: Person.Builder.() -> Unit): Person =
-    Person.Builder().apply(initializer).build()
+public fun Person(mandatoryDoubleWithoutDefault: Double, initializer: Person.Builder.() -> Unit):
+    Person = Person.Builder(mandatoryDoubleWithoutDefault).apply(initializer).build()
 
 """.trimIndent().replace('%', '$')

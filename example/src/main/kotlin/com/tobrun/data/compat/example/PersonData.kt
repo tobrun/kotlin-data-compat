@@ -22,5 +22,13 @@ private data class PersonData(
      */
     val nickname: String?,
     @Default("42")
-    val age: Int
+    val age: Int,
+    @Default("50.2f")
+    val euroAmount: Float,
+    @Default("300.0")
+    val dollarAmount: Double?,
+    /**
+     * Extra info. Mandatory property.
+     */
+    val extraInfo: String,
 ) : SampleInterface

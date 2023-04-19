@@ -24,8 +24,8 @@ import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.asTypeName
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
@@ -125,20 +125,22 @@ class DataCompatProcessor(
                 .filter { (it.resolve().declaration as? KSClassDeclaration)?.classKind == ClassKind.INTERFACE }
 
             // Map KSP properties with KoltinPoet TypeNames
-            val propertyMap = mutableMapOf<KSPropertyDeclaration, TypeName>()
+            val propertyMap = mutableMapOf<KSPropertyDeclaration, PropertyDescriptor>()
             for (property in classDeclaration.getAllProperties()) {
                 val classTypeParams = classDeclaration.typeParameters.toTypeParameterResolver()
                 val typeName = property.type.resolve().toTypeName(classTypeParams)
-                propertyMap[property] = typeName
+                propertyMap[property] = PropertyDescriptor(
+                    typeName = typeName,
+                    mandatoryForConstructor = defaultValuesMap[classDeclaration]
+                        ?.get(property.toString()) == null && !typeName.isNullable,
+                    kDoc = property.docString?.trim(' ', '\n') ?: property.toString().capitalizeAndAddSpaces(),
+                )
             }
 
-            // Build property list for kdoc
-
-            val kdocPropertyList = classKdoc?.let { doc ->
-                doc.split("\n")
-                    .filter { it.isNotEmpty() && it.contains("@property") }
-                    .map { it.substringAfter("$KDOC_PROPERTY_ANNOTATION ") }
-            } ?: emptyList()
+            // Build mandatory param list for toBuilder and DSL function
+            val mandatoryParams = propertyMap.filter {
+                it.value.mandatoryForConstructor
+            }.map { it.key.toString() }.joinToString(", ")
 
             // KotlinPoet class builder
             val classBuilder = TypeSpec.classBuilder(className).apply {
@@ -174,22 +176,17 @@ class DataCompatProcessor(
                 val constructorBuilder = FunSpec.constructorBuilder()
                 constructorBuilder.addModifiers(KModifier.PRIVATE)
                 for (entry in propertyMap) {
-                    constructorBuilder.addParameter(entry.key.toString(), entry.value)
+                    constructorBuilder.addParameter(entry.key.toString(), entry.value.typeName)
                 }
                 primaryConstructor(constructorBuilder.build())
 
                 // Property initializers
                 for (entry in propertyMap) {
                     addProperty(
-                        PropertySpec.builder(entry.key.toString(), entry.value)
+                        PropertySpec.builder(entry.key.toString(), entry.value.typeName)
                             .addKdoc(
                                 """
-                                |${getKDocProperty(kdocPropertyList, entry.key.toString()).replaceFirstChar {
-                                    if (it.isLowerCase()) it.titlecase(
-                                        Locale.getDefault()
-                                    ) else it.toString()
-                                }}
-                                |${entry.key.docString?.trimStart(' ', '\n') ?: ""}
+                                |${entry.value.kDoc}
                                 """.trimMargin()
                             )
                             .initializer(entry.key.toString())
@@ -233,7 +230,20 @@ class DataCompatProcessor(
                         propertyMap.keys.joinToString(
                             prefix = "return ",
                             separator = "·&& ",
-                            transform = { "$it·==·other.$it" },
+                            transform = {
+                                with(it.type.resolve()) {
+                                    val isFloat =
+                                        toClassName() == Float::class.asTypeName()
+                                    val isDouble =
+                                        toClassName() == Double::class.asTypeName()
+                                    when {
+                                        !isMarkedNullable && (isDouble || isFloat) -> "$it.compareTo(other.$it)·==·0"
+                                        isMarkedNullable && isDouble -> "($it·?:·0.0).compareTo(other.$it·?:·0.0)·==·0"
+                                        isMarkedNullable && isFloat -> "($it·?:·0f).compareTo(other.$it·?:·0f)·==·0"
+                                        else -> "$it·==·other.$it"
+                                    }
+                                }
+                            },
                             postfix = ""
                         )
                     )
@@ -270,7 +280,7 @@ class DataCompatProcessor(
                         )
                         .addStatement(
                             propertyMap.keys.joinToString(
-                                prefix = "return Builder() .",
+                                prefix = "return Builder($mandatoryParams) .",
                                 transform = { str ->
                                     "set${str.toString().replaceFirstChar {
                                         if (it.isLowerCase())
@@ -288,35 +298,57 @@ class DataCompatProcessor(
 
             // Builder pattern
             val builderBuilder = TypeSpec.classBuilder("Builder")
+            var builderConstructorNeeded = false
+            val constructorBuilder = FunSpec.constructorBuilder()
             for (property in propertyMap) {
                 val propertyName = property.key.toString()
-                val nullableType = property.value.copy(nullable = true)
-                val kDocProperty = getKDocProperty(kdocPropertyList, propertyName)
-                builderBuilder.addProperty(
-                    PropertySpec.builder(propertyName, nullableType)
-                        .initializer(
-                            CodeBlock.builder()
-                                .add(defaultValuesMap[classDeclaration]?.get(propertyName) ?: "null")
-                                .build()
-                        )
-                        .addKdoc(
-                            """
-                            |${kDocProperty.replaceFirstChar {
-                                if (it.isLowerCase()) it.titlecase(
-                                    Locale.getDefault()
-                                ) else it.toString()
-                            }}
-                            |${property.key.docString?.trimStart(' ', '\n') ?: ""}
+                // when no default value provided but property is non nullable -
+                // it should be moved to Builder mandatory ctor arguments
+                if (property.value.mandatoryForConstructor) {
+                    builderConstructorNeeded = true
+                    constructorBuilder.addParameter(
+                        propertyName,
+                        property.value.typeName,
+                        KModifier.PUBLIC
+                    )
+                    builderBuilder.addProperty(
+                        PropertySpec.builder(propertyName, property.value.typeName)
+                            .initializer(propertyName)
+                            .addKdoc(
+                                """
+                            |${property.value.kDoc}
                             """.trimMargin()
-                        )
-                        .addAnnotation(
-                            AnnotationSpec.builder(JvmSynthetic::class)
-                                .useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
-                                .build()
-                        )
-                        .mutable()
-                        .build()
-                )
+                            )
+                            .addAnnotation(
+                                AnnotationSpec.builder(JvmSynthetic::class)
+                                    .useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
+                                    .build()
+                            )
+                            .mutable(true)
+                            .build()
+                    )
+                } else {
+                    builderBuilder.addProperty(
+                        PropertySpec.builder(propertyName, property.value.typeName)
+                            .initializer(
+                                CodeBlock.builder()
+                                    .add(defaultValuesMap[classDeclaration]?.get(propertyName) ?: "null")
+                                    .build()
+                            )
+                            .addKdoc(
+                                """
+                            |${property.value.kDoc}
+                            """.trimMargin()
+                            )
+                            .addAnnotation(
+                                AnnotationSpec.builder(JvmSynthetic::class)
+                                    .useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
+                                    .build()
+                            )
+                            .mutable()
+                            .build()
+                    )
+                }
 
                 builderBuilder.addFunction(
                     FunSpec
@@ -327,18 +359,22 @@ class DataCompatProcessor(
                         )
                         .addKdoc(
                             """
-                            |Set $kDocProperty
-                            |${property.key.docString?.trimStart(' ', '\n') ?: ""}
-                            |@param $propertyName $kDocProperty
+                            |Setter for $propertyName: ${property.value.kDoc.trimEnd('.')
+                                .replaceFirstChar { it.lowercase(Locale.getDefault()) }}.
+                            |
+                            |@param $propertyName
                             |@return Builder
                             """.trimMargin()
                         )
-                        .addParameter(propertyName, nullableType)
+                        .addParameter(propertyName, property.value.typeName)
                         .addStatement("this.$propertyName = $propertyName")
                         .addStatement("return this")
                         .returns(ClassName(packageName, className, "Builder"))
                         .build()
                 )
+            }
+            if (builderConstructorNeeded) {
+                builderBuilder.primaryConstructor(constructorBuilder.build())
             }
 
             val buildFunction = FunSpec.builder("build")
@@ -346,27 +382,13 @@ class DataCompatProcessor(
                 """
                 |Returns a [$className] reference to the object being constructed by the builder.
                 |
-                |Throws an [IllegalArgumentException] when a non-null property wasn't initialised.
-                |
                 |@return $className
                 """.trimMargin()
             )
-            for (property in propertyMap) {
-                if (!property.value.isNullable) {
-                    buildFunction.addStatement("if (${property.key}==null) {")
-                    val exceptionMessage = "Null ${property.key} found when building $className."
-                    buildFunction.addStatement(
-                        "\tthrow IllegalArgumentException(\"\"\"$exceptionMessage\"\"\".trimIndent())"
-                    )
-                    buildFunction.addStatement("}")
-                }
-            }
             buildFunction.addStatement(
                 propertyMap.keys.joinToString(
                     prefix = "return $className(",
-                    transform = {
-                        if (propertyMap[it]!!.isNullable) "$it" else "$it!!"
-                    },
+                    transform = { "$it" },
                     separator = ", ",
                     postfix = ")"
                 )
@@ -378,13 +400,6 @@ class DataCompatProcessor(
                 |Composes and builds a [$className] object.
                 |
                 |This is a concrete implementation of the builder design pattern.
-                |
-                |${
-                kdocPropertyList.joinToString(
-                    prefix = if (kdocPropertyList.isEmpty()) "" else "$KDOC_PROPERTY_ANNOTATION ",
-                    separator = "\n$KDOC_PROPERTY_ANNOTATION "
-                )
-                }
                 """.trimMargin()
             )
             builderBuilder.addFunction(buildFunction.build())
@@ -403,21 +418,30 @@ class DataCompatProcessor(
                 )
                 .returns(ClassName(packageName, className))
                 .addAnnotation(JvmSynthetic::class)
-                .addParameter(
-                    ParameterSpec.builder(
-                        "initializer",
-                        LambdaTypeName.get(
-                            ClassName(packageName, className, "Builder"),
-                            emptyList(),
-                            ClassName("kotlin", "Unit")
-                        )
-                    ).build()
-                )
-                .addStatement("return $className.Builder().apply(initializer).build()")
+
+            if (mandatoryParams.isNotEmpty()) {
+                propertyMap.filter {
+                    it.value.mandatoryForConstructor
+                }.forEach {
+                    initializerFunctionBuilder.addParameter(it.key.toString(), it.value.typeName)
+                }
+            }
+
+            initializerFunctionBuilder.addParameter(
+                ParameterSpec.builder(
+                    "initializer",
+                    LambdaTypeName.get(
+                        ClassName(packageName, className, "Builder"),
+                        emptyList(),
+                        ClassName("kotlin", "Unit")
+                    )
+                ).build()
+            ).addStatement("return $className.Builder($mandatoryParams).apply(initializer).build()")
 
             // File
             val fileBuilder = FileSpec.builder(packageName, className)
                 .addImport("java.util", "Objects")
+                .suppressWarningTypes("RedundantVisibilityModifier")
                 .addType(classBuilder.build())
                 .addFunction(initializerFunctionBuilder.build())
 
@@ -430,6 +454,21 @@ class DataCompatProcessor(
             }
 
             fileBuilder.build().writeTo(codeGenerator = codeGenerator, aggregating = false)
+        }
+
+        @Suppress("SameParameterValue")
+        private fun FileSpec.Builder.suppressWarningTypes(vararg types: String): FileSpec.Builder {
+            if (types.isEmpty()) {
+                return this
+            }
+
+            val format = "%S,".repeat(types.count()).trimEnd(',')
+            addAnnotation(
+                AnnotationSpec.builder(ClassName("", "Suppress"))
+                    .addMember(format, *types)
+                    .build()
+            )
+            return this
         }
 
         @Suppress("ReturnCount")
@@ -479,21 +518,14 @@ class DataCompatProcessor(
 
     private fun KSClassDeclaration.isDataClass() = modifiers.contains(Modifier.DATA)
 
-    private fun getKDocProperty(kdocPropertyList: List<String>, propertyName: String): String {
-        var kDocProperty = kdocPropertyList
-            .filter { it.startsWith("$propertyName ") }
-            .joinToString {
-                it.substringAfter("$propertyName ").lowercase(Locale.getDefault())
-            }
-
-        if (kDocProperty.isEmpty()) {
-            kDocProperty = propertyName
-        }
-        return kDocProperty
+    private fun String.capitalizeAndAddSpaces(): String {
+        val tmpStr = replace(Regex("[A-Z]")) { " " + it.value.lowercase(Locale.getDefault()) }
+        return tmpStr.replaceFirstChar {
+            if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+        } + "."
     }
 
     private companion object {
         private const val CLASS_NAME_DROP_LAST_CHARACTERS = 4
-        private const val KDOC_PROPERTY_ANNOTATION = "@property"
     }
 }
