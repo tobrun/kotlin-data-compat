@@ -236,16 +236,11 @@ class DataCompatProcessor(
                                         toClassName() == Float::class.asTypeName()
                                     val isDouble =
                                         toClassName() == Double::class.asTypeName()
-                                    if (isFloat || isDouble) {
-                                        if (isMarkedNullable && isDouble) {
-                                            "($it·?:·0.0).compareTo(other.$it·?:·0.0)·==·0"
-                                        } else if (isMarkedNullable && isFloat) {
-                                            "($it·?:·0f).compareTo(other.$it·?:·0f)·==·0"
-                                        } else {
-                                            "$it.compareTo(other.$it)·==·0"
-                                        }
-                                    } else {
-                                        "$it·==·other.$it"
+                                    when {
+                                        !isMarkedNullable && (isDouble || isFloat) -> "$it.compareTo(other.$it)·==·0"
+                                        isMarkedNullable && isDouble -> "($it·?:·0.0).compareTo(other.$it·?:·0.0)·==·0"
+                                        isMarkedNullable && isFloat -> "($it·?:·0f).compareTo(other.$it·?:·0f)·==·0"
+                                        else -> "$it·==·other.$it"
                                     }
                                 }
                             },
