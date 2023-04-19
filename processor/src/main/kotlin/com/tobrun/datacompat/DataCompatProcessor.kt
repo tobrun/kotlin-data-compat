@@ -363,7 +363,7 @@ class DataCompatProcessor(
                         )
                         .addKdoc(
                             """
-                            |Setter for ${property.value.kDoc.trimEnd('.')
+                            |Setter for $propertyName: ${property.value.kDoc.trimEnd('.')
                                 .replaceFirstChar { it.lowercase(Locale.getDefault()) }}.
                             |
                             |@param $propertyName
