@@ -7,6 +7,6 @@ package com.tobrun.datacompat.annotation
  * @param importsForDefaults if any default values require additional imports, they should be passed here.
  *  E.g. `["android.graphics.Color"]`
  */
-@Retention(AnnotationRetention.RUNTIME)
+@Retention(AnnotationRetention.SOURCE)
 @Target(AnnotationTarget.CLASS)
 annotation class DataCompat(val importsForDefaults: Array<String> = [])
