@@ -28,15 +28,15 @@ And you will have to include the required dependencies:
 
 ```groovy
 dependencies {
-  implementation 'com.github.tobrun.kotlin-data-compat:annotation:0.6.0'
-  ksp 'com.github.tobrun.kotlin-data-compat:processor:0.6.0'
+  implementation 'com.github.tobrun.kotlin-data-compat:annotation:0.8.0'
+  ksp 'com.github.tobrun.kotlin-data-compat:processor:0.8.0'
 }
 ```
 
 
 ### Getting started
 
-Given an exisiting data class:
+Given an existing data class:
  - add `@DataCompat` annotation
  - mark class private
  - append `Data` to the class name
