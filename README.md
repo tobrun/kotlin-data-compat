@@ -36,7 +36,7 @@ dependencies {
 
 ### Getting started
 
-Given an exisiting data class:
+Given an existing data class:
  - add `@DataCompat` annotation
  - mark class private
  - append `Data` to the class name
