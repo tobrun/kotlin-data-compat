@@ -11,6 +11,6 @@ package com.tobrun.datacompat.annotation
  *  it should be passed here as "\"STRING_VALUE\""; if default [Int] is used, it should be passed
  *  as "INT_VALUE".
  */
-@Retention(AnnotationRetention.RUNTIME)
+@Retention(AnnotationRetention.SOURCE)
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class Default(val valueAsString: String)
