@@ -9,7 +9,10 @@ package com.tobrun.datacompat.annotation
 
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
-annotation class DataCompat(val importsForDefaults: Array<String> = [])
+annotation class DataCompat(
+    val importsForDefaults: Array<String> = [],
+    val generateCompanionObject: Boolean = false
+)
 
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.VALUE_PARAMETER)

@@ -26,7 +26,7 @@ interface EmptyInterface2
  * @property veryLongAndVeryDetailedDescription The very long and very detailed description.
  */
 @Deprecated
-@DataCompat(importsForDefaults = ["java.util.Date"])
+@DataCompat(importsForDefaults = ["java.util.Date"], generateCompanionObject = true)
 private data class PersonData(
     @Default("\"John\"")
     val name: String,

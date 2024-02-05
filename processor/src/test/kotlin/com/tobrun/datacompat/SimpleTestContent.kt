@@ -179,6 +179,11 @@ public class Person private constructor(
     public fun build(): Person = Person(name, nickname, age, veryLongAndVeryDetailedDescription,
         mandatoryDoubleWithoutDefault)
   }
+
+  /**
+   * Public Companion Object of [Person].
+   */
+  public companion object
 }
 
 /**

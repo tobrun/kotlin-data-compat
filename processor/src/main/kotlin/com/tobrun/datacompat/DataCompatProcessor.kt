@@ -430,7 +430,14 @@ class DataCompatProcessor(
             classBuilder.addType(builderBuilder.build())
 
             if (generateCompanionObject) {
-                classBuilder.addType(TypeSpec.companionObjectBuilder().build())
+                classBuilder.addType(
+                    TypeSpec.companionObjectBuilder()
+                        .addKdoc(
+                            """
+                            Public Companion Object of [$className].
+                            """.trimIndent()
+                        ).build()
+                )
             }
 
             // initializer function
