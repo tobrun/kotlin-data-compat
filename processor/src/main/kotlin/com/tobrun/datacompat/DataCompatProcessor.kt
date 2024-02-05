@@ -297,11 +297,11 @@ class DataCompatProcessor(
                                 prefix = "return Builder($mandatoryParams)\n",
                                 transform = { str ->
                                     "${" ".repeat(INDENTATION_SIZE)}.set${
-                                        str.toString().replaceFirstChar {
-                                            if (it.isLowerCase())
-                                                it.titlecase(Locale.getDefault())
-                                            else it.toString()
-                                        }
+                                    str.toString().replaceFirstChar {
+                                        if (it.isLowerCase())
+                                            it.titlecase(Locale.getDefault())
+                                        else it.toString()
+                                    }
                                     }($str)"
                                 },
                                 separator = "\n",
@@ -373,16 +373,16 @@ class DataCompatProcessor(
                     FunSpec
                         .builder(
                             "set${
-                                propertyName.replaceFirstChar {
-                                    if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
-                                }
+                            propertyName.replaceFirstChar {
+                                if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+                            }
                             }"
                         )
                         .addKdoc(
                             """
                             |Setter for $propertyName: ${
-                                property.value.kDoc.trimEnd('.')
-                                    .replaceFirstChar { it.lowercase(Locale.getDefault()) }
+                            property.value.kDoc.trimEnd('.')
+                                .replaceFirstChar { it.lowercase(Locale.getDefault()) }
                             }.
                             |
                             |@param $propertyName
