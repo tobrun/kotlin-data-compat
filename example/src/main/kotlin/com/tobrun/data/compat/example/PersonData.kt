@@ -12,7 +12,7 @@ annotation class SampleAnnotation
  * @property nickname The nickname.
  * @property age The age.
  */
-@DataCompat(importsForDefaults = ["java.util.Date"])
+@DataCompat(importsForDefaults = ["java.util.Date"], generateCompanionObject = true)
 @SampleAnnotation
 private data class PersonData(
     @Default("\"John\" + Date(1580897313933L).toString()")

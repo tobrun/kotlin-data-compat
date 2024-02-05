@@ -6,7 +6,12 @@ package com.tobrun.datacompat.annotation
  *
  * @param importsForDefaults if any default values require additional imports, they should be passed here.
  *  E.g. `["android.graphics.Color"]`
+ * @param generateCompanionObject if enabled, a public companion object will be generated for the class,
+ *  so that user can then manually write extension functions to the Companion object. Defaults to false.
  */
 @Retention(AnnotationRetention.SOURCE)
 @Target(AnnotationTarget.CLASS)
-annotation class DataCompat(val importsForDefaults: Array<String> = [])
+annotation class DataCompat(
+    val importsForDefaults: Array<String> = [],
+    val generateCompanionObject: Boolean = false
+)
