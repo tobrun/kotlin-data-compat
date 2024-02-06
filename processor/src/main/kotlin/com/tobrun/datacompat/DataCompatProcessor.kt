@@ -47,7 +47,8 @@ class DataCompatProcessor(
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
         logger.info("DataCompat: process")
-        val dataCompatAnnotated = resolver.getSymbolsWithAnnotation(DataCompat::class.qualifiedName!!, true)
+        val dataCompatAnnotated =
+            resolver.getSymbolsWithAnnotation(DataCompat::class.qualifiedName!!, true)
         if (dataCompatAnnotated.count() == 0) {
             logger.info("DataCompat: No DataCompat annotations found for processing")
             return emptyList()
@@ -72,7 +73,8 @@ class DataCompatProcessor(
                 if (defaultValueMap == null) {
                     defaultValueMap = mutableMapOf()
                 }
-                val defaultAnnotationsParams = annotatedProperty.annotations.firstOrNull()?.arguments
+                val defaultAnnotationsParams =
+                    annotatedProperty.annotations.firstOrNull()?.arguments
                 val defaultValue = defaultAnnotationsParams?.first()
                 defaultValueMap[annotatedProperty.name!!.getShortName()] =
                     defaultValue?.value as? String?
@@ -114,10 +116,21 @@ class DataCompatProcessor(
             val classKdoc = classDeclaration.docString
             val packageName = classDeclaration.packageName.asString()
 
-            val imports = ArrayList<String>()
-            classDeclaration.annotations.firstOrNull {
+            val dataCompatAnnotation = classDeclaration.annotations.firstOrNull {
                 it.annotationType.resolve().toString() == DataCompat::class.simpleName
-            }?.arguments?.firstOrNull()?.value?.let { imports.addAll(it as ArrayList<String>) }
+            }
+            // Resolve list of imports from [DataCompat.importsForDefaults]
+            val imports = ArrayList<String>()
+            dataCompatAnnotation?.arguments?.firstOrNull {
+                it.name?.getShortName() == "importsForDefaults"
+            }?.value?.let { imports.addAll(it as ArrayList<String>) }
+
+            // Resolve generateCompanionObject flag from [DataCompat.generateCompanionObject]
+            var generateCompanionObject = false
+            dataCompatAnnotation?.arguments?.firstOrNull {
+                it.name?.getShortName() == "generateCompanionObject"
+            }?.value?.let { generateCompanionObject = it as Boolean }
+
             val otherAnnotations = classDeclaration.annotations
                 .filter { it.annotationType.resolve().toString() != DataCompat::class.simpleName }
             val implementedInterfaces = classDeclaration
@@ -133,7 +146,8 @@ class DataCompatProcessor(
                     typeName = typeName,
                     mandatoryForConstructor = defaultValuesMap[classDeclaration]
                         ?.get(property.toString()) == null && !typeName.isNullable,
-                    kDoc = property.docString?.trim(' ', '\n') ?: property.toString().capitalizeAndAddSpaces(),
+                    kDoc = property.docString?.trim(' ', '\n') ?: property.toString()
+                        .capitalizeAndAddSpaces(),
                 )
             }
 
@@ -280,15 +294,17 @@ class DataCompatProcessor(
                         )
                         .addStatement(
                             propertyMap.keys.joinToString(
-                                prefix = "return Builder($mandatoryParams) .",
+                                prefix = "return Builder($mandatoryParams)\n",
                                 transform = { str ->
-                                    "set${str.toString().replaceFirstChar {
+                                    "${" ".repeat(INDENTATION_SIZE)}.set${
+                                    str.toString().replaceFirstChar {
                                         if (it.isLowerCase())
                                             it.titlecase(Locale.getDefault())
                                         else it.toString()
-                                    }}($str)"
+                                    }
+                                    }($str)"
                                 },
-                                separator = " .",
+                                separator = "\n",
                             )
                         )
                         .returns(ClassName("", "Builder"))
@@ -332,7 +348,10 @@ class DataCompatProcessor(
                         PropertySpec.builder(propertyName, property.value.typeName)
                             .initializer(
                                 CodeBlock.builder()
-                                    .add(defaultValuesMap[classDeclaration]?.get(propertyName) ?: "null")
+                                    .add(
+                                        defaultValuesMap[classDeclaration]?.get(propertyName)
+                                            ?: "null"
+                                    )
                                     .build()
                             )
                             .addKdoc(
@@ -353,14 +372,18 @@ class DataCompatProcessor(
                 builderBuilder.addFunction(
                     FunSpec
                         .builder(
-                            "set${propertyName.replaceFirstChar {
+                            "set${
+                            propertyName.replaceFirstChar {
                                 if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
-                            }}"
+                            }
+                            }"
                         )
                         .addKdoc(
                             """
-                            |Setter for $propertyName: ${property.value.kDoc.trimEnd('.')
-                                .replaceFirstChar { it.lowercase(Locale.getDefault()) }}.
+                            |Setter for $propertyName: ${
+                            property.value.kDoc.trimEnd('.')
+                                .replaceFirstChar { it.lowercase(Locale.getDefault()) }
+                            }.
                             |
                             |@param $propertyName
                             |@return Builder
@@ -405,6 +428,17 @@ class DataCompatProcessor(
             builderBuilder.addFunction(buildFunction.build())
 
             classBuilder.addType(builderBuilder.build())
+
+            if (generateCompanionObject) {
+                classBuilder.addType(
+                    TypeSpec.companionObjectBuilder()
+                        .addKdoc(
+                            """
+                            Public Companion Object of [$className].
+                            """.trimIndent()
+                        ).build()
+                )
+            }
 
             // initializer function
             val initializerFunctionBuilder = FunSpec.builder(className)
@@ -527,5 +561,6 @@ class DataCompatProcessor(
 
     private companion object {
         private const val CLASS_NAME_DROP_LAST_CHARACTERS = 4
+        private const val INDENTATION_SIZE = 2
     }
 }

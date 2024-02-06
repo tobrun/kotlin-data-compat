@@ -72,10 +72,12 @@ public class Person private constructor(
   /**
    * Convert to Builder allowing to change class properties.
    */
-  public fun toBuilder(): Builder = Builder(mandatoryDoubleWithoutDefault) .setName(name)
-      .setNickname(nickname) .setAge(age)
-      .setVeryLongAndVeryDetailedDescription(veryLongAndVeryDetailedDescription)
-      .setMandatoryDoubleWithoutDefault(mandatoryDoubleWithoutDefault)
+  public fun toBuilder(): Builder = Builder(mandatoryDoubleWithoutDefault)
+    .setName(name)
+    .setNickname(nickname)
+    .setAge(age)
+    .setVeryLongAndVeryDetailedDescription(veryLongAndVeryDetailedDescription)
+    .setMandatoryDoubleWithoutDefault(mandatoryDoubleWithoutDefault)
 
   /**
    * Composes and builds a [Person] object.
@@ -177,6 +179,11 @@ public class Person private constructor(
     public fun build(): Person = Person(name, nickname, age, veryLongAndVeryDetailedDescription,
         mandatoryDoubleWithoutDefault)
   }
+
+  /**
+   * Public Companion Object of [Person].
+   */
+  public companion object
 }
 
 /**
