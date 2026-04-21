@@ -8,8 +8,10 @@ import java.util.Objects
 import kotlin.Any
 import kotlin.Boolean
 import kotlin.Deprecated
+import kotlin.DeprecationLevel
 import kotlin.Double
 import kotlin.Int
+import kotlin.ReplaceWith
 import kotlin.String
 import kotlin.Unit
 import kotlin.jvm.JvmSynthetic
@@ -30,6 +32,11 @@ public class Person private constructor(
   /**
    * Nickname.
    */
+  @Deprecated(
+    message = "Use fullName instead.",
+    replaceWith = ReplaceWith(expression = "", imports = []),
+    level = DeprecationLevel.WARNING
+  )
   public val nickname: String?,
   /**
    * Age.
@@ -47,9 +54,9 @@ public class Person private constructor(
   /**
    * Overloaded toString function.
    */
-  public override fun toString() = ""${"\""}Person(name=%name, nickname=%nickname, age=%age,
+  public override fun toString() = ""${'"'}Person(name=%name, nickname=%nickname, age=%age,
       veryLongAndVeryDetailedDescription=%veryLongAndVeryDetailedDescription,
-      mandatoryDoubleWithoutDefault=%mandatoryDoubleWithoutDefault)""${"\""}.trimIndent()
+      mandatoryDoubleWithoutDefault=%mandatoryDoubleWithoutDefault)""${'"'}.trimIndent()
 
   /**
    * Overloaded equals function.
@@ -101,6 +108,11 @@ public class Person private constructor(
      * Nickname.
      */
     @set:JvmSynthetic
+    @Deprecated(
+      message = "Use fullName instead.",
+      replaceWith = ReplaceWith(expression = "", imports = []),
+      level = DeprecationLevel.WARNING
+    )
     public var nickname: String? = null
 
     /**
@@ -132,6 +144,11 @@ public class Person private constructor(
      * @param nickname
      * @return Builder
      */
+    @Deprecated(
+      message = "Use fullName instead.",
+      replaceWith = ReplaceWith(expression = "", imports = []),
+      level = DeprecationLevel.WARNING
+    )
     public fun setNickname(nickname: String?): Builder {
       this.nickname = nickname
       return this

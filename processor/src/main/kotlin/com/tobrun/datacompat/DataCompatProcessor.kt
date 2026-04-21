@@ -7,9 +7,11 @@ import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessor
 import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
+import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSNode
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
+import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.KSVisitorVoid
 import com.google.devtools.ksp.symbol.Modifier
@@ -73,8 +75,11 @@ class DataCompatProcessor(
                 if (defaultValueMap == null) {
                     defaultValueMap = mutableMapOf()
                 }
-                val defaultAnnotationsParams =
-                    annotatedProperty.annotations.firstOrNull()?.arguments
+                val defaultAnnotation = annotatedProperty.annotations.firstOrNull {
+                    it.annotationType.resolve().declaration
+                        .qualifiedName?.asString() == Default::class.qualifiedName
+                }
+                val defaultAnnotationsParams = defaultAnnotation?.arguments
                 val defaultValue = defaultAnnotationsParams?.first()
                 defaultValueMap[annotatedProperty.name!!.getShortName()] =
                     defaultValue?.value as? String?
@@ -137,17 +142,36 @@ class DataCompatProcessor(
                 .superTypes
                 .filter { (it.resolve().declaration as? KSClassDeclaration)?.classKind == ClassKind.INTERFACE }
 
+            // Build a map of constructor parameter annotations (excluding @Default)
+            val paramAnnotationsMap = mutableMapOf<String, List<AnnotationSpec>>()
+            classDeclaration.primaryConstructor?.parameters?.forEach { param ->
+                val paramName = param.name?.getShortName() ?: return@forEach
+                val annotations = param.annotations
+                    .filter {
+                        val qualifiedName = it.annotationType.resolve()
+                            .declaration.qualifiedName?.asString()
+                        qualifiedName != Default::class.qualifiedName
+                    }
+                    .map { it.toAnnotationSpec() }
+                    .toList()
+                if (annotations.isNotEmpty()) {
+                    paramAnnotationsMap[paramName] = annotations
+                }
+            }
+
             // Map KSP properties with KoltinPoet TypeNames
             val propertyMap = mutableMapOf<KSPropertyDeclaration, PropertyDescriptor>()
             for (property in classDeclaration.getAllProperties()) {
                 val classTypeParams = classDeclaration.typeParameters.toTypeParameterResolver()
                 val typeName = property.type.resolve().toTypeName(classTypeParams)
+                val propertyName = property.toString()
                 propertyMap[property] = PropertyDescriptor(
                     typeName = typeName,
                     mandatoryForConstructor = defaultValuesMap[classDeclaration]
                         ?.get(property.toString()) == null && !typeName.isNullable,
                     kDoc = property.docString?.trim(' ', '\n') ?: property.toString()
                         .capitalizeAndAddSpaces(),
+                    annotations = paramAnnotationsMap[propertyName] ?: emptyList(),
                 )
             }
 
@@ -196,16 +220,15 @@ class DataCompatProcessor(
 
                 // Property initializers
                 for (entry in propertyMap) {
-                    addProperty(
-                        PropertySpec.builder(entry.key.toString(), entry.value.typeName)
-                            .addKdoc(
-                                """
-                                |${entry.value.kDoc}
-                                """.trimMargin()
-                            )
-                            .initializer(entry.key.toString())
-                            .build()
-                    )
+                    val propBuilder = PropertySpec.builder(entry.key.toString(), entry.value.typeName)
+                        .addKdoc(
+                            """
+                            |${entry.value.kDoc}
+                            """.trimMargin()
+                        )
+                        .initializer(entry.key.toString())
+                    entry.value.annotations.forEach { propBuilder.addAnnotation(it) }
+                    addProperty(propBuilder.build())
                 }
 
                 // Function toString
@@ -327,74 +350,72 @@ class DataCompatProcessor(
                         property.value.typeName,
                         KModifier.PUBLIC
                     )
-                    builderBuilder.addProperty(
-                        PropertySpec.builder(propertyName, property.value.typeName)
-                            .initializer(propertyName)
-                            .addKdoc(
-                                """
+                    val mandatoryPropBuilder = PropertySpec.builder(propertyName, property.value.typeName)
+                        .initializer(propertyName)
+                        .addKdoc(
+                            """
                             |${property.value.kDoc}
                             """.trimMargin()
-                            )
-                            .addAnnotation(
-                                AnnotationSpec.builder(JvmSynthetic::class)
-                                    .useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
-                                    .build()
-                            )
-                            .mutable(true)
-                            .build()
-                    )
+                        )
+                        .addAnnotation(
+                            AnnotationSpec.builder(JvmSynthetic::class)
+                                .useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
+                                .build()
+                        )
+                        .mutable(true)
+                    property.value.annotations.forEach { mandatoryPropBuilder.addAnnotation(it) }
+                    builderBuilder.addProperty(mandatoryPropBuilder.build())
                 } else {
-                    builderBuilder.addProperty(
-                        PropertySpec.builder(propertyName, property.value.typeName)
-                            .initializer(
-                                CodeBlock.builder()
-                                    .add(
-                                        defaultValuesMap[classDeclaration]?.get(propertyName)
-                                            ?: "null"
-                                    )
-                                    .build()
-                            )
-                            .addKdoc(
-                                """
-                            |${property.value.kDoc}
-                            """.trimMargin()
-                            )
-                            .addAnnotation(
-                                AnnotationSpec.builder(JvmSynthetic::class)
-                                    .useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
-                                    .build()
-                            )
-                            .mutable()
-                            .build()
-                    )
-                }
-
-                builderBuilder.addFunction(
-                    FunSpec
-                        .builder(
-                            "set${
-                            propertyName.replaceFirstChar {
-                                if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
-                            }
-                            }"
+                    val optionalPropBuilder = PropertySpec.builder(propertyName, property.value.typeName)
+                        .initializer(
+                            CodeBlock.builder()
+                                .add(
+                                    defaultValuesMap[classDeclaration]?.get(propertyName)
+                                        ?: "null"
+                                )
+                                .build()
                         )
                         .addKdoc(
                             """
-                            |Setter for $propertyName: ${
-                            property.value.kDoc.trimEnd('.')
-                                .replaceFirstChar { it.lowercase(Locale.getDefault()) }
-                            }.
-                            |
-                            |@param $propertyName
-                            |@return Builder
+                            |${property.value.kDoc}
                             """.trimMargin()
                         )
-                        .addParameter(propertyName, property.value.typeName)
-                        .addStatement("this.$propertyName = $propertyName")
-                        .addStatement("return this")
-                        .returns(ClassName(packageName, className, "Builder"))
-                        .build()
-                )
+                        .addAnnotation(
+                            AnnotationSpec.builder(JvmSynthetic::class)
+                                .useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
+                                .build()
+                        )
+                        .mutable()
+                    property.value.annotations.forEach { optionalPropBuilder.addAnnotation(it) }
+                    builderBuilder.addProperty(optionalPropBuilder.build())
+                }
+
+                val setterBuilder = FunSpec
+                    .builder(
+                        "set${
+                        propertyName.replaceFirstChar {
+                            if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+                        }
+                        }"
+                    )
+                    .addKdoc(
+                        """
+                        |Setter for $propertyName: ${
+                        property.value.kDoc.trimEnd('.')
+                            .replaceFirstChar { it.lowercase(Locale.getDefault()) }
+                        }.
+                        |
+                        |@param $propertyName
+                        |@return Builder
+                        """.trimMargin()
+                    )
+                property.value.annotations.forEach { setterBuilder.addAnnotation(it) }
+                setterBuilder
+                    .addParameter(propertyName, property.value.typeName)
+                    .addStatement("this.$propertyName = $propertyName")
+                    .addStatement("return this")
+                    .returns(ClassName(packageName, className, "Builder"))
+                builderBuilder.addFunction(setterBuilder.build())
             }
             if (builderConstructorNeeded) {
                 builderBuilder.primaryConstructor(constructorBuilder.build())
@@ -551,6 +572,72 @@ class DataCompatProcessor(
     }
 
     private fun KSClassDeclaration.isDataClass() = modifiers.contains(Modifier.DATA)
+
+    private fun KSAnnotation.toAnnotationSpec(): AnnotationSpec {
+        val className = annotationType.resolve().toClassName()
+        val builder = AnnotationSpec.builder(className)
+        arguments.forEach { argument ->
+            val name = argument.name?.getShortName() ?: return@forEach
+            val value = argument.value ?: return@forEach
+            addAnnotationArgument(builder, name, value)
+        }
+        return builder.build()
+    }
+
+    @Suppress("ComplexMethod")
+    private fun addAnnotationArgument(
+        builder: AnnotationSpec.Builder,
+        name: String,
+        value: Any,
+    ) {
+        when (value) {
+            is String -> builder.addMember("$name = %S", value)
+            is Boolean, is Int, is Long, is Float, is Double, is Byte, is Short, is Char ->
+                builder.addMember("$name = %L", value)
+            is KSType -> addTypeArgument(builder, name, value)
+            is KSAnnotation -> builder.addMember("$name = %L", value.toAnnotationSpec())
+            is List<*> -> addArrayArgument(builder, name, value)
+        }
+    }
+
+    private fun addTypeArgument(
+        builder: AnnotationSpec.Builder,
+        name: String,
+        value: KSType,
+    ) {
+        val declaration = value.declaration
+        if (declaration is KSClassDeclaration && declaration.classKind == ClassKind.ENUM_ENTRY) {
+            val enumClass = declaration.parentDeclaration as? KSClassDeclaration
+            if (enumClass != null) {
+                builder.addMember(
+                    "$name = %T.%L",
+                    enumClass.toClassName(),
+                    declaration.simpleName.asString()
+                )
+            }
+        } else {
+            builder.addMember("$name = %T::class", value.toClassName())
+        }
+    }
+
+    private fun addArrayArgument(
+        builder: AnnotationSpec.Builder,
+        name: String,
+        value: List<*>,
+    ) {
+        val codeBlock = CodeBlock.builder().add("$name = [")
+        value.forEachIndexed { index, element ->
+            if (index > 0) codeBlock.add(", ")
+            when (element) {
+                is String -> codeBlock.add("%S", element)
+                is KSAnnotation -> codeBlock.add("%L", element.toAnnotationSpec())
+                is KSType -> codeBlock.add("%T::class", element.toClassName())
+                else -> codeBlock.add("%L", element)
+            }
+        }
+        codeBlock.add("]")
+        builder.addMember(codeBlock.build())
+    }
 
     private fun String.capitalizeAndAddSpaces(): String {
         val tmpStr = replace(Regex("[A-Z]")) { " " + it.value.lowercase(Locale.getDefault()) }
