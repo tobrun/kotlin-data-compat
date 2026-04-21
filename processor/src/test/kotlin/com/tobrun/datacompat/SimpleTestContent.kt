@@ -44,7 +44,7 @@ public class Person private constructor(
   @Deprecated(
     message = "Use birthDate instead.",
     replaceWith = ReplaceWith(imports = [], expression = "birthDate"),
-    level = DeprecationLevel.WARNING
+    level = DeprecationLevel.ERROR
   )
   public val age: Int,
   /**
@@ -127,7 +127,7 @@ public class Person private constructor(
     @Deprecated(
       message = "Use birthDate instead.",
       replaceWith = ReplaceWith(imports = [], expression = "birthDate"),
-      level = DeprecationLevel.WARNING
+      level = DeprecationLevel.ERROR
     )
     public var age: Int = 23
 
@@ -173,7 +173,7 @@ public class Person private constructor(
     @Deprecated(
       message = "Use birthDate instead.",
       replaceWith = ReplaceWith(imports = [], expression = "birthDate"),
-      level = DeprecationLevel.WARNING
+      level = DeprecationLevel.ERROR
     )
     public fun setAge(age: Int): Builder {
       this.age = age
