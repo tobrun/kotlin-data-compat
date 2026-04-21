@@ -160,9 +160,9 @@ class DataCompatProcessor(
             }
 
             // Map KSP properties with KoltinPoet TypeNames
+            val classTypeParams = classDeclaration.typeParameters.toTypeParameterResolver()
             val propertyMap = mutableMapOf<KSPropertyDeclaration, PropertyDescriptor>()
             for (property in classDeclaration.getAllProperties()) {
-                val classTypeParams = classDeclaration.typeParameters.toTypeParameterResolver()
                 val typeName = property.type.resolve().toTypeName(classTypeParams)
                 val propertyName = property.toString()
                 propertyMap[property] = PropertyDescriptor(
@@ -337,6 +337,9 @@ class DataCompatProcessor(
 
             // Builder pattern
             val builderBuilder = TypeSpec.classBuilder("Builder")
+            val jvmSyntheticSetAnnotation = AnnotationSpec.builder(JvmSynthetic::class)
+                .useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
+                .build()
             var builderConstructorNeeded = false
             val constructorBuilder = FunSpec.constructorBuilder()
             for (property in propertyMap) {
@@ -350,45 +353,26 @@ class DataCompatProcessor(
                         property.value.typeName,
                         KModifier.PUBLIC
                     )
-                    val mandatoryPropBuilder = PropertySpec.builder(propertyName, property.value.typeName)
-                        .initializer(propertyName)
-                        .addKdoc(
-                            """
-                            |${property.value.kDoc}
-                            """.trimMargin()
-                        )
-                        .addAnnotation(
-                            AnnotationSpec.builder(JvmSynthetic::class)
-                                .useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
-                                .build()
-                        )
-                        .mutable(true)
-                    property.value.annotations.forEach { mandatoryPropBuilder.addAnnotation(it) }
-                    builderBuilder.addProperty(mandatoryPropBuilder.build())
-                } else {
-                    val optionalPropBuilder = PropertySpec.builder(propertyName, property.value.typeName)
-                        .initializer(
-                            CodeBlock.builder()
-                                .add(
-                                    defaultValuesMap[classDeclaration]?.get(propertyName)
-                                        ?: "null"
-                                )
-                                .build()
-                        )
-                        .addKdoc(
-                            """
-                            |${property.value.kDoc}
-                            """.trimMargin()
-                        )
-                        .addAnnotation(
-                            AnnotationSpec.builder(JvmSynthetic::class)
-                                .useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
-                                .build()
-                        )
-                        .mutable()
-                    property.value.annotations.forEach { optionalPropBuilder.addAnnotation(it) }
-                    builderBuilder.addProperty(optionalPropBuilder.build())
                 }
+
+                val builderPropInitializer = if (property.value.mandatoryForConstructor) {
+                    CodeBlock.of(propertyName)
+                } else {
+                    CodeBlock.of(
+                        defaultValuesMap[classDeclaration]?.get(propertyName) ?: "null"
+                    )
+                }
+                val builderPropBuilder = PropertySpec.builder(propertyName, property.value.typeName)
+                    .initializer(builderPropInitializer)
+                    .addKdoc(
+                        """
+                        |${property.value.kDoc}
+                        """.trimMargin()
+                    )
+                    .addAnnotation(jvmSyntheticSetAnnotation)
+                    .mutable(true)
+                property.value.annotations.forEach { builderPropBuilder.addAnnotation(it) }
+                builderBuilder.addProperty(builderPropBuilder.build())
 
                 val setterBuilder = FunSpec
                     .builder(
