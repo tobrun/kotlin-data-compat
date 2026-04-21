@@ -33,6 +33,7 @@ private data class PersonData(
     @Deprecated("Use fullName instead.")
     @Default("null")
     val nickname: String?,
+    @Deprecated("Use birthDate instead.", ReplaceWith("birthDate"), DeprecationLevel.WARNING)
     @Default("23")
     val age: Int,
     /**

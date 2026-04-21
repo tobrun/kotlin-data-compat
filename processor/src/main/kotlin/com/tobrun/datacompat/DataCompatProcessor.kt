@@ -576,6 +576,9 @@ class DataCompatProcessor(
     private fun KSAnnotation.toAnnotationSpec(): AnnotationSpec {
         val className = annotationType.resolve().toClassName()
         val builder = AnnotationSpec.builder(className)
+        // Note: KSP 1.6.x returns all arguments including defaults, and provides no API
+        // to distinguish explicitly provided values from defaults. We emit all arguments
+        // to avoid losing user-specified non-default values.
         arguments.forEach { argument ->
             val name = argument.name?.getShortName() ?: return@forEach
             val value = argument.value ?: return@forEach
