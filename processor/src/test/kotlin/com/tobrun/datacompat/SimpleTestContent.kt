@@ -33,8 +33,8 @@ public class Person private constructor(
    * Nickname.
    */
   @Deprecated(
-    message = "Use fullName instead.",
-    replaceWith = ReplaceWith(expression = "", imports = []),
+    message = "Use name instead.",
+    replaceWith = ReplaceWith(imports = [], expression = "name"),
     level = DeprecationLevel.WARNING
   )
   public val nickname: String?,
@@ -114,8 +114,8 @@ public class Person private constructor(
      */
     @set:JvmSynthetic
     @Deprecated(
-      message = "Use fullName instead.",
-      replaceWith = ReplaceWith(expression = "", imports = []),
+      message = "Use name instead.",
+      replaceWith = ReplaceWith(imports = [], expression = "name"),
       level = DeprecationLevel.WARNING
     )
     public var nickname: String? = null
@@ -155,8 +155,8 @@ public class Person private constructor(
      * @return Builder
      */
     @Deprecated(
-      message = "Use fullName instead.",
-      replaceWith = ReplaceWith(expression = "", imports = []),
+      message = "Use name instead.",
+      replaceWith = ReplaceWith(imports = [], expression = "name"),
       level = DeprecationLevel.WARNING
     )
     public fun setNickname(nickname: String?): Builder {
