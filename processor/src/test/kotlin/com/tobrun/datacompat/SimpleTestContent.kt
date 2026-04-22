@@ -8,8 +8,10 @@ import java.util.Objects
 import kotlin.Any
 import kotlin.Boolean
 import kotlin.Deprecated
+import kotlin.DeprecationLevel
 import kotlin.Double
 import kotlin.Int
+import kotlin.ReplaceWith
 import kotlin.String
 import kotlin.Unit
 import kotlin.jvm.JvmSynthetic
@@ -30,10 +32,20 @@ public class Person private constructor(
   /**
    * Nickname.
    */
+  @Deprecated(
+    message = "Use name instead.",
+    replaceWith = ReplaceWith(imports = [], expression = "name"),
+    level = DeprecationLevel.WARNING
+  )
   public val nickname: String?,
   /**
    * Age.
    */
+  @Deprecated(
+    message = "Use birthDate instead.",
+    replaceWith = ReplaceWith(imports = [], expression = "birthDate"),
+    level = DeprecationLevel.ERROR
+  )
   public val age: Int,
   /**
    * Actually it's a very short description.
@@ -47,9 +59,9 @@ public class Person private constructor(
   /**
    * Overloaded toString function.
    */
-  public override fun toString() = ""${"\""}Person(name=%name, nickname=%nickname, age=%age,
+  public override fun toString() = ""${'"'}Person(name=%name, nickname=%nickname, age=%age,
       veryLongAndVeryDetailedDescription=%veryLongAndVeryDetailedDescription,
-      mandatoryDoubleWithoutDefault=%mandatoryDoubleWithoutDefault)""${"\""}.trimIndent()
+      mandatoryDoubleWithoutDefault=%mandatoryDoubleWithoutDefault)""${'"'}.trimIndent()
 
   /**
    * Overloaded equals function.
@@ -101,12 +113,22 @@ public class Person private constructor(
      * Nickname.
      */
     @set:JvmSynthetic
+    @Deprecated(
+      message = "Use name instead.",
+      replaceWith = ReplaceWith(imports = [], expression = "name"),
+      level = DeprecationLevel.WARNING
+    )
     public var nickname: String? = null
 
     /**
      * Age.
      */
     @set:JvmSynthetic
+    @Deprecated(
+      message = "Use birthDate instead.",
+      replaceWith = ReplaceWith(imports = [], expression = "birthDate"),
+      level = DeprecationLevel.ERROR
+    )
     public var age: Int = 23
 
     /**
@@ -132,6 +154,11 @@ public class Person private constructor(
      * @param nickname
      * @return Builder
      */
+    @Deprecated(
+      message = "Use name instead.",
+      replaceWith = ReplaceWith(imports = [], expression = "name"),
+      level = DeprecationLevel.WARNING
+    )
     public fun setNickname(nickname: String?): Builder {
       this.nickname = nickname
       return this
@@ -143,6 +170,11 @@ public class Person private constructor(
      * @param age
      * @return Builder
      */
+    @Deprecated(
+      message = "Use birthDate instead.",
+      replaceWith = ReplaceWith(imports = [], expression = "birthDate"),
+      level = DeprecationLevel.ERROR
+    )
     public fun setAge(age: Int): Builder {
       this.age = age
       return this

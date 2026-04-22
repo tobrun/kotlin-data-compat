@@ -30,8 +30,10 @@ interface EmptyInterface2
 private data class PersonData(
     @Default("\"John\"")
     val name: String,
+    @Deprecated("Use name instead.", ReplaceWith("name"))
     @Default("null")
     val nickname: String?,
+    @Deprecated("Use birthDate instead.", ReplaceWith("birthDate"), DeprecationLevel.ERROR)
     @Default("23")
     val age: Int,
     /**

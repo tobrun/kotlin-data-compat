@@ -45,6 +45,7 @@ Given an existing data class:
  - retain existing class annotations (but not parameters for them)
  - retain existing interfaces
  - make non-nullable parameters without defaults mandatory Builder constructor parameters
+ - propagate field annotations (e.g. `@Deprecated`) to generated class properties, Builder properties, and Builder setter methods
 
 For example:
 
@@ -69,6 +70,7 @@ private data class PersonData(
     /**
      * Additional comment.
      */
+    @Deprecated("Use name instead.", ReplaceWith("name"))
     val nickname: String?,
     @Default("42")
     val age: Int,
@@ -94,9 +96,12 @@ import java.util.Date
 import java.util.Objects
 import kotlin.Any
 import kotlin.Boolean
+import kotlin.Deprecated
+import kotlin.DeprecationLevel
 import kotlin.Double
 import kotlin.Float
 import kotlin.Int
+import kotlin.ReplaceWith
 import kotlin.String
 import kotlin.Unit
 import kotlin.jvm.JvmSynthetic
@@ -116,6 +121,11 @@ public class Person private constructor(
     /**
      * Additional comment.
      */
+    @Deprecated(
+      message = "Use name instead.",
+      replaceWith = ReplaceWith(imports = [], expression = "name"),
+      level = DeprecationLevel.WARNING
+    )
     public val nickname: String?,
     /**
      * Age.
@@ -188,6 +198,11 @@ public class Person private constructor(
          * Additional comment.
          */
         @set:JvmSynthetic
+        @Deprecated(
+          message = "Use name instead.",
+          replaceWith = ReplaceWith(imports = [], expression = "name"),
+          level = DeprecationLevel.WARNING
+        )
         public var nickname: String? = null
 
         /**
@@ -225,6 +240,11 @@ public class Person private constructor(
          * @param nickname
          * @return Builder
          */
+        @Deprecated(
+          message = "Use name instead.",
+          replaceWith = ReplaceWith(imports = [], expression = "name"),
+          level = DeprecationLevel.WARNING
+        )
         public fun setNickname(nickname: String?): Builder {
             this.nickname = nickname
             return this
